@@ -38,22 +38,26 @@ export const EditorialHero = forwardRef(function EditorialHero(props, ref) {
 
       const tl = gsap.timeline({ paused: true });
 
-      tl.from(headlineLines, {
-        autoAlpha: 0,
-        yPercent: 60,
-        duration: 0.9,
-        ease: 'power3.out',
-        stagger: 0.08
-      }, 0.05);
+      if (headlineLines && headlineLines.length > 0) {
+        tl.from(headlineLines, {
+          autoAlpha: 0,
+          yPercent: 60,
+          duration: 0.9,
+          ease: 'power3.out',
+          stagger: 0.08
+        }, 0.05);
+      }
 
-      tl.from(frogEl, {
-        autoAlpha: 0,
-        y: 30,
-        scale: 0.965,
-        transformOrigin: '50% 90%',
-        duration: 1,
-        ease: 'power3.out'
-      }, 0.32);
+      if (frogEl) {
+        tl.from(frogEl, {
+          autoAlpha: 0,
+          y: 30,
+          scale: 0.965,
+          transformOrigin: '50% 90%',
+          duration: 1,
+          ease: 'power3.out'
+        }, 0.32);
+      }
 
       if (decoRef.current) {
         tl.from(decoRef.current, {
@@ -69,7 +73,8 @@ export const EditorialHero = forwardRef(function EditorialHero(props, ref) {
         tl.play(0);
       } else {
         tl.pause(0);
-        const targets = [headlineLines, frogEl, decoRef.current].filter(Boolean);
+        const validHeadlines = headlineLines && headlineLines.length > 0 ? Array.from(headlineLines) : [];
+        const targets = [...validHeadlines, frogEl, decoRef.current].filter(Boolean);
         if (targets.length) {
           gsap.set(targets, { autoAlpha: 1, yPercent: 0, y: 0, scale: 1 });
         }

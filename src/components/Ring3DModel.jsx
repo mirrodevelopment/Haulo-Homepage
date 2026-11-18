@@ -1793,11 +1793,11 @@ export function Ring3DModel({
     loadModel();
 
     // ---- PAUSABLE RENDER LOOP (FREEZES GPU WHEN OFF-SCREEN OR HIDDEN) ----
-    let clock = new THREE.Clock();
+    let lastRenderTime = performance.now();
 
     const startRenderLoop = () => {
       if (animationFrameId || !isMounted) return;
-      clock.start();
+      lastRenderTime = performance.now();
 
       const render = () => {
         animationFrameId = requestAnimationFrame(render);
@@ -1807,7 +1807,9 @@ export function Ring3DModel({
           return;
         }
 
-        const dt = Math.min(clock.getDelta(), 0.1);
+        const now = performance.now();
+        const dt = Math.min(Math.max(0, (now - lastRenderTime) / 1000), 0.1);
+        lastRenderTime = now;
 
         if (expandedForSharedFrog) {
           syncExpandedCameraToContainer();

@@ -780,27 +780,36 @@ export const HeroExperience = forwardRef(function HeroExperience(
         ? badgeRefs.current
         : Array.from(spaceWorldEl ? spaceWorldEl.querySelectorAll('.ring-view-case-badge') : []);
 
-      const ringSetters = ringEls.map((el) => ({
-        x: gsap.quickSetter(el, 'x', 'px'),
-        y: gsap.quickSetter(el, 'y', 'px'),
-        z: gsap.quickSetter(el, 'z', 'px'),
-        scale: gsap.quickSetter(el, 'scale'),
-        rotationX: gsap.quickSetter(el, 'rotationX', 'deg'),
-        rotationY: gsap.quickSetter(el, 'rotationY', 'deg'),
-        rotationZ: gsap.quickSetter(el, 'rotationZ', 'deg'),
-        opacity: gsap.quickSetter(el, 'opacity'),
-        visibility: gsap.quickSetter(el, 'visibility')
-      }));
+      const ringSetters = ringEls.map((el) => {
+        if (!el) return null;
+        return {
+          x: gsap.quickSetter(el, 'x', 'px'),
+          y: gsap.quickSetter(el, 'y', 'px'),
+          z: gsap.quickSetter(el, 'z', 'px'),
+          scale: gsap.quickSetter(el, 'scale'),
+          rotationX: gsap.quickSetter(el, 'rotationX', 'deg'),
+          rotationY: gsap.quickSetter(el, 'rotationY', 'deg'),
+          rotationZ: gsap.quickSetter(el, 'rotationZ', 'deg'),
+          opacity: gsap.quickSetter(el, 'opacity'),
+          visibility: gsap.quickSetter(el, 'visibility')
+        };
+      });
 
-      const cylinderSetters = cylinderEls.map((el) => ({
-        rotationY: gsap.quickSetter(el, 'rotationY', 'deg')
-      }));
+      const cylinderSetters = cylinderEls.map((el) => {
+        if (!el) return null;
+        return {
+          rotationY: gsap.quickSetter(el, 'rotationY', 'deg')
+        };
+      });
 
-      const badgeSetters = badgeEls.map((el) => ({
-        opacity: gsap.quickSetter(el, 'opacity'),
-        scale: gsap.quickSetter(el, 'scale'),
-        visibility: gsap.quickSetter(el, 'visibility')
-      }));
+      const badgeSetters = badgeEls.map((el) => {
+        if (!el) return null;
+        return {
+          opacity: gsap.quickSetter(el, 'opacity'),
+          scale: gsap.quickSetter(el, 'scale'),
+          visibility: gsap.quickSetter(el, 'visibility')
+        };
+      });
 
       const hoverScales = new Float32Array(SPACE_COUNT).fill(1.0);
       const badgeAlphas = new Float32Array(SPACE_COUNT).fill(0.0);
@@ -949,34 +958,42 @@ export const HeroExperience = forwardRef(function HeroExperience(
         const brText = brTextGroupRef.current;
 
         // Reset paths to hidden dashoffset for clean draw animation
-        tl.set(paths, {
-          strokeDasharray: 180,
-          strokeDashoffset: 180,
-          opacity: 0,
-        });
-        tl.set(dots, {
-          scale: 0.3,
-          opacity: 0,
-          transformOrigin: 'center center',
-        });
+        if (paths.length > 0) {
+          tl.set(paths, {
+            strokeDasharray: 180,
+            strokeDashoffset: 180,
+            opacity: 0,
+          });
+        }
+        if (dots.length > 0) {
+          tl.set(dots, {
+            scale: 0.3,
+            opacity: 0,
+            transformOrigin: 'center center',
+          });
+        }
 
         // 1. Draw in the leader lines from word towards callouts
-        tl.to(paths, {
-          strokeDashoffset: 0,
-          opacity: 1,
-          duration: 0.32,
-          ease: 'power2.out',
-          stagger: 0.03,
-        }, 0);
+        if (paths.length > 0) {
+          tl.to(paths, {
+            strokeDashoffset: 0,
+            opacity: 1,
+            duration: 0.32,
+            ease: 'power2.out',
+            stagger: 0.03,
+          }, 0);
+        }
 
         // 2. Pop in terminal reticle dots with snappy spring
-        tl.to(dots, {
-          scale: 1,
-          opacity: 1,
-          duration: 0.22,
-          ease: 'back.out(2.4)',
-          stagger: 0.03,
-        }, 0.10);
+        if (dots.length > 0) {
+          tl.to(dots, {
+            scale: 1,
+            opacity: 1,
+            duration: 0.22,
+            ease: 'back.out(2.4)',
+            stagger: 0.03,
+          }, 0.10);
+        }
 
         // 3. Subtle slide + reveal on callout text annotations
         if (trText) {
@@ -1900,8 +1917,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
                 brStartDotRef.current,
                 brEndDotRef.current
               ].filter(Boolean);
-              gsap.set(paths, { opacity: 0, strokeDashoffset: 180 });
-              gsap.set(dots, { opacity: 0 });
+              if (paths.length > 0) gsap.set(paths, { opacity: 0, strokeDashoffset: 180 });
+              if (dots.length > 0) gsap.set(dots, { opacity: 0 });
               if (trTextGroupRef.current) gsap.set(trTextGroupRef.current, { opacity: 0 });
               if (blTextGroupRef.current) gsap.set(blTextGroupRef.current, { opacity: 0 });
               if (brTextGroupRef.current) gsap.set(brTextGroupRef.current, { opacity: 0 });
