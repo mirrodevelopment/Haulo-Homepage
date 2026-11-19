@@ -15,7 +15,7 @@ export function ContactPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
     // Ensure body background matches site theme color
-    document.body.style.backgroundColor = 'var(--bg-color, #dce4f7)';
+    document.body.style.backgroundColor = 'var(--bg-color, #ffffff)';
     return () => {
       document.body.style.backgroundColor = '';
     };

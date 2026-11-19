@@ -2222,90 +2222,12 @@
     transform-style: preserve-3d;
   }
 
-  /* Clean, Luminous Ambient Tonal Layer matching the bright airy blue reference */
-  .ambient-tonal-layer {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background:
-      radial-gradient(ellipse at 50% 36%,
-        rgba(255, 255, 255, 0.72) 0%,
-        rgba(246, 250, 255, 0.40) 38%,
-        rgba(230, 240, 255, 0.12) 70%,
-        transparent 100%),
-      radial-gradient(circle at 82% 75%,
-        rgba(228, 238, 255, 0.35) 0%,
-        transparent 60%),
-      radial-gradient(circle at 18% 65%,
-        rgba(222, 234, 255, 0.30) 0%,
-        transparent 55%);
-  }
-
-  /* Inset Soft Edge Tone (Clean luminous periwinkle) */
-  .subtle-vignette {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 2;
-    box-shadow: inset 0 0 160px rgba(185, 208, 248, 0.08);
-  }
-
-  /* Water Ambient Light Currents (Crisp bright luminous washes) */
-  .water-currents-wrapper {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    will-change: transform;
-    z-index: 0;
-  }
-
-  .water-current-a {
-    position: absolute;
-    top: -15%;
-    left: 8%;
-    width: 65vw;
-    height: 65vw;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.42) 0%, rgba(230, 240, 255, 0) 68%);
-    will-change: transform;
-    animation: waterCurrentPulse 9s ease-in-out infinite alternate;
-  }
-
-  .water-current-b {
-    position: absolute;
-    bottom: -15%;
-    right: 6%;
-    width: 75vw;
-    height: 75vw;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.32) 0%, rgba(220, 235, 255, 0) 70%);
-    will-change: transform;
-    animation: waterCurrentPulse 12s ease-in-out infinite alternate-reverse;
-  }
-
-  /* Water Caustics & Sunlight Rays (Soft luminous streaks) */
+  /* Clean pure white studio environment */
+  .ambient-tonal-layer,
+  .subtle-vignette,
+  .water-currents-wrapper,
   .water-caustics-wrapper {
-    position: absolute;
-    inset: -15%;
-    pointer-events: none;
-    will-change: transform;
-    z-index: 0;
-  }
-
-  .water-caustic-rays {
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(114deg,
-        transparent 0%,
-        transparent 8%,
-        rgba(255, 255, 255, 0.24) 10%,
-        rgba(240, 242, 250, 0.14) 12%,
-        transparent 15%,
-        transparent 24%);
-    opacity: 0.55;
-    animation: causticRayShift 8s ease-in-out infinite alternate;
-    will-change: transform;
+    display: none !important;
   }
 
   @keyframes causticRayShift {
@@ -2928,70 +2850,12 @@
     overflow: hidden;
   }
 
-  .space-gallery-bg .ambient-tonal-layer {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
-    background:
-      radial-gradient(ellipse at 50% 30%,
-        rgba(255, 255, 255, 0.65) 0%,
-        rgba(246, 250, 255, 0.35) 40%,
-        rgba(230, 240, 255, 0.12) 72%,
-        transparent 100%),
-      radial-gradient(ellipse at 50% 75%,
-        rgba(255, 255, 255, 0.50) 0%,
-        rgba(230, 240, 255, 0.12) 72%,
-        transparent 100%),
-      radial-gradient(circle at 82% 35%,
-        rgba(228, 238, 255, 0.35) 0%,
-        transparent 60%),
-      radial-gradient(circle at 18% 45%,
-        rgba(222, 234, 255, 0.30) 0%,
-        transparent 55%),
-      radial-gradient(circle at 82% 80%,
-        rgba(228, 238, 255, 0.35) 0%,
-        transparent 60%),
-      radial-gradient(circle at 18% 90%,
-        rgba(222, 234, 255, 0.30) 0%,
-        transparent 55%);
-  }
-
-  .space-gallery-bg .water-currents-wrapper {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-  }
-
-  .space-gallery-bg .water-caustics-wrapper {
-    position: absolute;
-    inset: -10%;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-  }
-
-  .space-gallery-bg .bg-grid {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 1;
-    background-image: radial-gradient(circle,
-        rgba(255, 255, 255, 0.34) 1.2px,
-        transparent 1.4px);
-    background-size: 7px 7px;
-  }
-
+  .space-gallery-bg .ambient-tonal-layer,
+  .space-gallery-bg .water-currents-wrapper,
+  .space-gallery-bg .water-caustics-wrapper,
+  .space-gallery-bg .bg-grid,
   .space-gallery-bg .subtle-vignette {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 2;
-    box-shadow: inset 0 0 140px rgba(185, 190, 205, 0.05);
+    display: none !important;
   }
 
   /* Sticky HUD Layer for Space Gallery Section (exact matching hero HUD layout) */

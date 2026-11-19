@@ -1,0 +1,603 @@
+{
+  "timestamp": "2026-11-19T05:43:38.135Z",
+  "archivedModels": [
+    {
+      "filename": "FROG_3D.glb.original.bak",
+      "srcPath": "backups/models/FROG_3D.glb.original.bak",
+      "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/FROG_3D.glb.original.bak",
+      "size": 74781612,
+      "sha256": "74feba7465535d4be918eede270300656dcc308e11abf4d84aabdf014704ef6e",
+      "status": "VERIFIED_ARCHIVED"
+    },
+    {
+      "filename": "HAULO_portfolio_ring.glb.original.bak",
+      "srcPath": "backups/models/HAULO_portfolio_ring.glb.original.bak",
+      "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/HAULO_portfolio_ring.glb.original.bak",
+      "size": 6476460,
+      "sha256": "017f170f33340847e828849361ee8165700cad59ebad97c6bdc13f07ebd1d54d",
+      "status": "VERIFIED_ARCHIVED"
+    },
+    {
+      "filename": "THEORY_OF_BLOOM-Ring.glb.original.bak",
+      "srcPath": "backups/models/THEORY_OF_BLOOM-Ring.glb.original.bak",
+      "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/THEORY_OF_BLOOM-Ring.glb.original.bak",
+      "size": 6444912,
+      "sha256": "c5d2d1e962eba2cac3a1e2a23184d10575011ec6cbc85dc7ebe2fe26729bce2d",
+      "status": "VERIFIED_ARCHIVED"
+    },
+    {
+      "filename": "stakor-Ring.glb.original.bak",
+      "srcPath": "backups/models/stakor-Ring.glb.original.bak",
+      "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/stakor-Ring.glb.original.bak",
+      "size": 6435852,
+      "sha256": "d789641aee8f2d5d4c008c9c1eec07c72130b9bdd7d6d6894c51cfaf9e72cbfb",
+      "status": "VERIFIED_ARCHIVED"
+    },
+    {
+      "filename": "TRULY_BARE_ring.glb.original.bak",
+      "srcPath": "backups/models/TRULY_BARE_ring.glb.original.bak",
+      "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/TRULY_BARE_ring.glb.original.bak",
+      "size": 6373624,
+      "sha256": "079d4ef5c9a427f60d79c08cca97d364082f8e27e3721f9090fa41767f36ef1d",
+      "status": "VERIFIED_ARCHIVED"
+    },
+    {
+      "filename": "AWkN-Ring.glb.original.bak",
+      "srcPath": "backups/models/AWkN-Ring.glb.original.bak",
+      "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/AWkN-Ring.glb.original.bak",
+      "size": 6370116,
+      "sha256": "b7cd53b5955063664c6efe1c9e8d9586f0e6a03fdbd371ab20db4af7bc274349",
+      "status": "VERIFIED_ARCHIVED"
+    }
+  ],
+  "deletedAssets": [
+    {
+      "relPath": "backups/models/FROG_3D.glb.original.bak",
+      "size": 74781612,
+      "sha256": "74feba7465535d4be918eede270300656dcc308e11abf4d84aabdf014704ef6e",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/models/HAULO_portfolio_ring.glb.original.bak",
+      "size": 6476460,
+      "sha256": "017f170f33340847e828849361ee8165700cad59ebad97c6bdc13f07ebd1d54d",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/models/THEORY_OF_BLOOM-Ring.glb.original.bak",
+      "size": 6444912,
+      "sha256": "c5d2d1e962eba2cac3a1e2a23184d10575011ec6cbc85dc7ebe2fe26729bce2d",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/models/stakor-Ring.glb.original.bak",
+      "size": 6435852,
+      "sha256": "d789641aee8f2d5d4c008c9c1eec07c72130b9bdd7d6d6894c51cfaf9e72cbfb",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/models/TRULY_BARE_ring.glb.original.bak",
+      "size": 6373624,
+      "sha256": "079d4ef5c9a427f60d79c08cca97d364082f8e27e3721f9090fa41767f36ef1d",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/models/AWkN-Ring.glb.original.bak",
+      "size": 6370116,
+      "sha256": "b7cd53b5955063664c6efe1c9e8d9586f0e6a03fdbd371ab20db4af7bc274349",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/Floor_Img.png",
+      "size": 1425767,
+      "sha256": "b0ddd8e45d67cd7394892411946752586b8ce8d7b87eb7e38f09cc9f9f040361",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/Frog_Img/1_Haulo_Img.png",
+      "size": 1307982,
+      "sha256": "8ad79d026593de5a260ce96ca5036819f443b227f235f138fb2cd87dacb1d4ac",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/Frog_Img/2_DesignTo_Img.png",
+      "size": 1312869,
+      "sha256": "593a33ea0df22dcaa6ca501d041ee21502e63dea3fabef4072ad368d3cc1c2f7",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/Frog_Img/3_Think_Img.png",
+      "size": 1668405,
+      "sha256": "58d9db8de459def5f390e076242d0016631499af2d062202b62fac3a7d12d27d",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/Frog_Img/4_AndEvolve_Img.png",
+      "size": 1026520,
+      "sha256": "3c6632e0b1857cbefb3165336af7150fdef1ca530c2e0308723617f792978aac",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/Frog_Img/Frog_Mech_rotated.png",
+      "size": 1794239,
+      "sha256": "de9e64890bd2bc79e8b213251956b80c7c3740d4512f73d0e6c6f296ddfef87d",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/Frog_Img/build_Img.png",
+      "size": 1505187,
+      "sha256": "42299cf8082e0c1d2ab294ad8d63f4512189033f2730dfa8c45618abaa45c1af",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/unused_assets/test_logo.png",
+      "size": 36692,
+      "sha256": "ca359c9ce679769332a33cf6209cfe20199fdf66225273f3cf6eef0706d7a5c5",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/unused_assets/vite.svg",
+      "size": 9522,
+      "sha256": "61bc9a161de58248288e6905425d7180f0624c2865007b97d763fdac12043a66",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "backups/unused_assets/icons.svg",
+      "size": 5031,
+      "sha256": "b45fa506195cfcdef406ba9f0c77b36ddc1a7c224040926ec70abc2fdea7b93a",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "current_screen.png",
+      "size": 5296,
+      "sha256": "6e82af322ec113bf09c47aad3aeb4b7d004c19c6eddb28ae7f5d11fbc4ddf0f0",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/Anton.ttf",
+      "size": 170812,
+      "sha256": "a4ba3a92350ebb031da0cb47630ac49eb265082ca1bc0450442f4a83ab947cab",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/BarlowCondensed.ttf",
+      "size": 110296,
+      "sha256": "724c9c25952d5f4a2d87185d9767aa006144c5f0d944dc05bf7d5d603551c260",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/BebasNeue.ttf",
+      "size": 61400,
+      "sha256": "08e4623805102d819f58601e46e345648846075e363b2ceb23313c2d1c83ec73",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/Oswald.ttf",
+      "size": 172088,
+      "sha256": "5b38c246e255a12f5712d640d56bcced0472466fc68983d2d0410ec0457c2817",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/SixCaps.ttf",
+      "size": 46388,
+      "sha256": "7b54a46671722fb670647c9c3951e6e618b6a9d876fc5d9ae34dfd311628ae5a",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/actual_hero.png",
+      "size": 902857,
+      "sha256": "5dec3f44c9aca51c8d59991255dccd1d3b0d4f1357edb7211abda86ed3026644",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/all_space_images_montage.png",
+      "size": 1978902,
+      "sha256": "b8e13098f772245ddf956632408a3f48307fd5b58ac4d54c204efc8e0ee7ca5e",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/awkn_crop.png",
+      "size": 68208,
+      "sha256": "14d05908bab428ac99921502f78ac6e4be599ba30b3b56ea2dea36caa9892b87",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/awkn_test_50.png",
+      "size": 253206,
+      "sha256": "624d64331627a27b07e65dc676e3c1f41f804172e4a075a0614681b506285733",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/awkn_test_54.png",
+      "size": 253580,
+      "sha256": "da77f6b7d2fd9b35f66e96f1321b2a8daa48ce8ae6a3daedfa79e26afce163fa",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/awkn_test_58.png",
+      "size": 253401,
+      "sha256": "848c2b853a2738c85b84e4fa71091e09af9eec0f696fc57f9ec7b9ebf7d80f13",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/awkn_test_62.png",
+      "size": 253194,
+      "sha256": "de567249a1ed2b459938a0233707bfaaa2efce4b75cb1f27ba80bc444b028f3b",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/awkn_test_66.png",
+      "size": 253261,
+      "sha256": "01b8799aa1d90a2eaa7feed4e838994134bc277f955ba3f01188ff2d4e4312ea",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/box_test_0.png",
+      "size": 275429,
+      "sha256": "5dffec448225781d69a96c3fbd81c6dea3c6e879c1123a2a28a7281055374c4e",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/box_test_1.png",
+      "size": 274689,
+      "sha256": "60ef5ed9f07b70c69ebe465818b5fe620bd9124c4f8dfcaf85d2b2d0122a915b",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/br_stripes_zoom.png",
+      "size": 2576,
+      "sha256": "e302f3ba0f94191208a710383838ec0f30e9b7577ea27901347f31c7616b8661",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_01-space-theory.png",
+      "size": 388047,
+      "sha256": "7319da05dad49db764e9296adff7c0208dc709b66d2f99aaba72a610cbe760e3",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_02-space-stakor.png",
+      "size": 379432,
+      "sha256": "3ba11ed559f21807affaaf84ebd1cbf6ce37f7f98c14395dcc3a48a8dddd451b",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_03-space-awkn.png",
+      "size": 61033,
+      "sha256": "6163188ac05532ab2e716e0d8e0ed27e132db6143efeeb6271a660f3da50bd9d",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_04-space_truly.png",
+      "size": 59003,
+      "sha256": "54f6f05f36a25b622153b25e859fdc904ed5f4164434573794caa61f81f3dfd8",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_bl.png",
+      "size": 18913,
+      "sha256": "39a9045a4b7b0c1e2b0f2d409548ab64eecf107eda53a1e03f1c7c289e82e613",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_bl_1.png",
+      "size": 16423,
+      "sha256": "bebad31a08db4a37c4fc3263abcd11b1ea43da8cc19ef6e1765319fa83c0bddf",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_bl_2.png",
+      "size": 22284,
+      "sha256": "0a16bdeb6425b8b298de5b8d2fd47198bf2b983c678fadb962a23c312df95e6c",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_bot.png",
+      "size": 33913,
+      "sha256": "f30e89b3160bb3ab4a150f46d880ee15487d10e9f63ad35ace002f6b5d52b301",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_box_precise.png",
+      "size": 386907,
+      "sha256": "164980be6b0c19851425c0d490b1054ccb79d1b459464b768a25e9d0a6d09d9d",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_br_1.png",
+      "size": 7181,
+      "sha256": "78e4c0e9bc0dfc17a7c308fe044032a248571b040020359bdb822bff81d22f3a",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_br_all.png",
+      "size": 14800,
+      "sha256": "b625488675f4c3944b1c407b200034a51704496d546c592152db8c77554982fd",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_btn_1.png",
+      "size": 24324,
+      "sha256": "e67ffcea726cd4ba9180ae645f412514a9b3b21fc6d59518ce42d73bbd106572",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_cbl.png",
+      "size": 14615,
+      "sha256": "ae6de4b5838ce9b4d593f9e86969c63e3fa540a35ed97eb62df0c851d3bb7c89",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_cbr.png",
+      "size": 20155,
+      "sha256": "16d315532f481b8bcf975a6d9baab8e40f5f614e4b1b739d513e7fed879b6aea",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_ctl.png",
+      "size": 9509,
+      "sha256": "50d5025203df3a353ecd8fb65dc29c841de671f9d53176a0eb17892568372b58",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_ctr.png",
+      "size": 7611,
+      "sha256": "0f7fc47611684975724567c476c0fe1949d51d00f7b93a2951b9c9d8e291456f",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_right.png",
+      "size": 530918,
+      "sha256": "a4541295f1f40605436934e8689d8ab30e6ccc6829f4d2e65e1159f4edace888",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_tr.png",
+      "size": 8297,
+      "sha256": "fe445389d6221ab00abc92d4f2b735e42737cef18c9dffafb5e1241ace74d1eb",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/crop_tr_1.png",
+      "size": 10073,
+      "sha256": "2ad889fa4238931dd018c5a091fdc1fbf4c668490a5d17df91bbc9e7ccf855b8",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/current_screenshot.png",
+      "size": 5851,
+      "sha256": "99db2a93b06fa1bf617f5c495e02dcf6c0b76961108491217e2cf4fed8699d35",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/current_word1.png",
+      "size": 1537802,
+      "sha256": "37951b57068e3c85164ae1edb125dd824e78da19725f6f697d806a2041ca6b10",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/design_letters.png",
+      "size": 53920,
+      "sha256": "e918fa34fde4f408da6f0020982e909016a5f3542f0d3d9d72ac2684e005b520",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/design_to_crop.png",
+      "size": 143465,
+      "sha256": "74e38883fd230f7beaeca4c9b74166fe0418d23e1c03a25fc8974b188b236640",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/dots_bl_1.png",
+      "size": 11293,
+      "sha256": "c8db1bb0bca32684aa47770a351cb46998a67e062f9570242172d950bed7d7a1",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/dots_br_1.png",
+      "size": 10461,
+      "sha256": "5813798a46022ddb8abb5bffa96d24afd04a3547c994dc6f63b80735cd46de27",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/dots_h_1.png",
+      "size": 3420,
+      "sha256": "b0080d4489b627c772c77d132f6f5d5f93d38c88d06049a1024b9438f1abd541",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/dots_tr_1.png",
+      "size": 10073,
+      "sha256": "2ad889fa4238931dd018c5a091fdc1fbf4c668490a5d17df91bbc9e7ccf855b8",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/dots_tr_2.png",
+      "size": 11596,
+      "sha256": "a594ee4190ea1f1443527483dd73a74e1a8274074bc154f75bac0fb39254a979",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/exact_screen_match.png",
+      "size": 271212,
+      "sha256": "4e5fa93a383a2ba7187e9ad9d554cf9babb5cbcf359a8f1eb1c6c6474ababcf0",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/fit_01-space-theory.png",
+      "size": 386015,
+      "sha256": "771eb44dd49cfdb597c07c965d4f66b836bdada9cb4057c98eafb9cd4758af8c",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/fit_02-space-stakor.png",
+      "size": 377543,
+      "sha256": "e5469201470aa401cf1fc9cfd401449d8b4edba4e8eb7dc6b2b0dc60e4ca56dc",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/fit_03-space-awkn.png",
+      "size": 60432,
+      "sha256": "5c899307d9f4bb3a69fb144c759ec0ee131570f4d3d8ba4f9e810b5ab66b0a5d",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/fit_04-space_truly.png",
+      "size": 58383,
+      "sha256": "42e834f41486dedf33cef912d193d8292f86a4e2ca911be829f7e6f489d88a30",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/frog_crop.png",
+      "size": 239879,
+      "sha256": "249a45389971755d5e213685eca7de06ed7cc6443d64afc868d34ec19a9cb0c5",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/green_texture.png",
+      "size": 70,
+      "sha256": "0e7a59abc711e5cbfd78c9917a8a5138e791fc2585cb54edbc56ec407467253b",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/ring_texture_74.png",
+      "size": 29944,
+      "sha256": "79444b18e77dee697fa94fdba929d6b62b45539ffc4db572110891b588057e0b",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/simulated_stripes.png",
+      "size": 248,
+      "sha256": "618d6518d7c0a854bbafb4f81f7c1f87970abf37be60a3da4777d077e5234831",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/stripes_detail_1.png",
+      "size": 4530,
+      "sha256": "71ab5638ad870a5a72064c4e1108d34b1256be44c749c5f462b305eb4222c001",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/stripes_detail_2.png",
+      "size": 6531,
+      "sha256": "3d3652c4da588f97819928af608f694df72a0e87ce2fbc8bb46216e89b00b1d7",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/stripes_detail_2_fixed.png",
+      "size": 6678,
+      "sha256": "e3c6f8d50ddf74dfb3e4943a970ab239909469b80ba32168d0ff9361050f28c8",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/stripes_detail_br.png",
+      "size": 3878,
+      "sha256": "bf52e86cdf495895d795d6aaf66cccc6ad53c511d108a94ba3f4051e19b7537c",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/test_crop.png",
+      "size": 201159,
+      "sha256": "919956689f060208592752bada4637a02278fa8d6617b0474625f9dd10be3937",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/test_grid.png",
+      "size": 378472,
+      "sha256": "ec2a50107aacbc611422bdcbc93a8372f88e6741a7d055ad717ddc9b99eca864",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/test_overlay.png",
+      "size": 273867,
+      "sha256": "1a92e0c04a2d3b0858ec53024f84afcf8efaae74b4315be2f398e0239c98a676",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/theory_screen_crop.png",
+      "size": 189147,
+      "sha256": "f6044ed8e4e304eb0ad22c126bef50917557e467ecf69095e19a81dd89b6aba6",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/truly_test_42.png",
+      "size": 327274,
+      "sha256": "a4deecd6b8db87ff5ce90a31d7a8136239e0822b9b02fc7b0bba7d4ed4a4faec",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/truly_test_46.png",
+      "size": 327575,
+      "sha256": "d3ee1d727db22a03fc2d30928b7f55a489a23fc100bb8f52633dd3d08a92df5e",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/truly_test_50.png",
+      "size": 327533,
+      "sha256": "99e3b7cecd2d28d2081379ab19ffb0edc7f72a96b7571e53816d210800f7b2fb",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/truly_test_54.png",
+      "size": 327264,
+      "sha256": "8199c6ce56d67f4f7f05d7d538486d187007a5de91097aa95312352c09116f3a",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/truly_test_58.png",
+      "size": 327292,
+      "sha256": "f477dea524356aec753a1635301234da5ebf7e7670a81d6f94acc34bfe0afe85",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/user_screen_tr.png",
+      "size": 28493,
+      "sha256": "96af54591b0d3f2dc81b53acf20ad3f3111b5c91d5e04e20389baf3e8626e655",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/user_view_crop.png",
+      "size": 75708,
+      "sha256": "707df6af885ccce0991b3893dd2327236e58c312f99930a34585e8655123aa2e",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/verify_02-space-stakor.png",
+      "size": 397180,
+      "sha256": "f3bb641574d7a38254c3f2d1699c7cde952ba3bd355f1043ea547c068a5866d5",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/verify_03-space-awkn.png",
+      "size": 67214,
+      "sha256": "189989a4a2dd8129c1fdd560572a4e04072a633ed2db65563b22be443cbe8ca6",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/verify_04-space_truly.png",
+      "size": 65088,
+      "sha256": "aac9cbae9f8a2e3b3dcb769414440816e134655627bddc2dc98050b7b7082208",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/verify_button_fit.png",
+      "size": 375317,
+      "sha256": "fbb116266b51c38aa57290ef04460bf5bb0b5866e9bc351e7cf955ce19555da7",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/verify_exact_screen.png",
+      "size": 398324,
+      "sha256": "558305ab3311ac0e4f0be71cc2ad36725563611430ce85ed1433c571db05e1cb",
+      "status": "DELETED"
+    },
+    {
+      "relPath": "scratch/verify_inner_screen.png",
+      "size": 400150,
+      "sha256": "3a6749c1cba037dc370772ecd87811fbc762b8c8aace1be805c062dd35bf4708",
+      "status": "DELETED"
+    }
+  ],
+  "totalRemovedBytes": 132044092,
+  "totalRemovedMB": "125.93"
+}

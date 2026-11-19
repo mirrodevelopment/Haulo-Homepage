@@ -1,5 +1,5 @@
 :root {
-  --bg-color: #dce4f7;
+  --bg-color: #ffffff;
   --text-primary: #050505;
   --text-muted: rgba(5, 5, 5, 0.45);
   --font-hero: 'Bebas Neue', 'Oswald', sans-serif;
@@ -62,45 +62,14 @@ h1, h2, h3, h4, h5, h6, p, span, a {
   overflow-wrap: break-word;
 }
 
-/* Dense uniform micro-square / dot grid */
+/* Clean solid white background (dot grid and colored ambient washes disabled) */
 .bg-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  background-image: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.34) 1.2px,
-    transparent 1.4px
-  );
-  background-size: 7px 7px;
+  display: none;
 }
 
-/* Very soft static ambient light washes */
-.ambient-light-a {
-  position: absolute;
-  top: -20%;
-  left: 10%;
-  width: 60vw;
-  height: 60vw;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(230, 200, 245, 0.28) 0%, rgba(240, 241, 248, 0) 70%);
-  pointer-events: none;
-  z-index: 1;
-  transform: translate3d(0,0,0);
-}
-
+.ambient-light-a,
 .ambient-light-b {
-  position: absolute;
-  bottom: -20%;
-  right: 10%;
-  width: 70vw;
-  height: 70vw;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(190, 220, 245, 0.25) 0%, rgba(240, 241, 248, 0) 70%);
-  pointer-events: none;
-  z-index: 1;
-  transform: translate3d(0,0,0);
+  display: none;
 }
 
 /* Custom Selection */
@@ -110,50 +79,10 @@ h1, h2, h3, h4, h5, h6, p, span, a {
 }
 
 /* ==========================================================================
-   GLOBAL FLOOR BACKGROUND  (shared across every page)
-   Single source: /Floor_Img.png. Rendered behind all page content.
-   - anchored to the bottom of the page/section
-   - `cover` preserves aspect ratio (no distortion)
-   - mask fades the upper edge into the page background
-   - pointer-events: none -> never blocks clicks or UI
+   GLOBAL FLOOR BACKGROUND (Deprecated - Floor_Img.png removed in Phase 5 Step 3)
    ========================================================================== */
 .floor-layer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
-
-  height: clamp(180px, 40vh, 460px);
-
-  background-image: url('/Floor_Img.png');
-  background-size: cover;
-  background-position: center bottom;
-  background-repeat: no-repeat;
-
-  opacity: 0.95;
-
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
-
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 58%, rgba(0, 0, 0, 0) 100%);
-  mask-image: linear-gradient(to top, #000 0%, #000 58%, rgba(0, 0, 0, 0) 100%);
-}
-
-/* Home hero: keep the floor strictly behind every hero scene layer
-   (floating fragments, conveyor, editorial, scene-right, portfolio world).
-   It is mounted as the first child of the foreground visuals, so the
-   zero-level of this variant keeps all later scene layers above it. */
-.floor-layer--hero {
-  z-index: 0;
-}
-
-/* About page: the page forms its own stacking context (z-index: 0 on
-   .about-page), so the floor sits on the page background, beneath all
-   in-flow text/cards/UI. */
-.about-page .floor-layer {
-  z-index: -1;
+  display: none;
 }
 
 /* ==========================================================================

@@ -1,0 +1,50 @@
+[
+  {
+    "filename": "FROG_3D.glb.original.bak",
+    "srcPath": "backups/models/FROG_3D.glb.original.bak",
+    "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/FROG_3D.glb.original.bak",
+    "size": 74781612,
+    "sha256": "74feba7465535d4be918eede270300656dcc308e11abf4d84aabdf014704ef6e",
+    "status": "VERIFIED_ARCHIVED"
+  },
+  {
+    "filename": "HAULO_portfolio_ring.glb.original.bak",
+    "srcPath": "backups/models/HAULO_portfolio_ring.glb.original.bak",
+    "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/HAULO_portfolio_ring.glb.original.bak",
+    "size": 6476460,
+    "sha256": "017f170f33340847e828849361ee8165700cad59ebad97c6bdc13f07ebd1d54d",
+    "status": "VERIFIED_ARCHIVED"
+  },
+  {
+    "filename": "THEORY_OF_BLOOM-Ring.glb.original.bak",
+    "srcPath": "backups/models/THEORY_OF_BLOOM-Ring.glb.original.bak",
+    "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/THEORY_OF_BLOOM-Ring.glb.original.bak",
+    "size": 6444912,
+    "sha256": "c5d2d1e962eba2cac3a1e2a23184d10575011ec6cbc85dc7ebe2fe26729bce2d",
+    "status": "VERIFIED_ARCHIVED"
+  },
+  {
+    "filename": "stakor-Ring.glb.original.bak",
+    "srcPath": "backups/models/stakor-Ring.glb.original.bak",
+    "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/stakor-Ring.glb.original.bak",
+    "size": 6435852,
+    "sha256": "d789641aee8f2d5d4c008c9c1eec07c72130b9bdd7d6d6894c51cfaf9e72cbfb",
+    "status": "VERIFIED_ARCHIVED"
+  },
+  {
+    "filename": "TRULY_BARE_ring.glb.original.bak",
+    "srcPath": "backups/models/TRULY_BARE_ring.glb.original.bak",
+    "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/TRULY_BARE_ring.glb.original.bak",
+    "size": 6373624,
+    "sha256": "079d4ef5c9a427f60d79c08cca97d364082f8e27e3721f9090fa41767f36ef1d",
+    "status": "VERIFIED_ARCHIVED"
+  },
+  {
+    "filename": "AWkN-Ring.glb.original.bak",
+    "srcPath": "backups/models/AWkN-Ring.glb.original.bak",
+    "archivePath": "/Users/admin/.gemini/antigravity/brain/013301e4-803e-4a79-9bbf-56e25695b0fb/archive/models/AWkN-Ring.glb.original.bak",
+    "size": 6370116,
+    "sha256": "b7cd53b5955063664c6efe1c9e8d9586f0e6a03fdbd371ab20db4af7bc274349",
+    "status": "VERIFIED_ARCHIVED"
+  }
+]

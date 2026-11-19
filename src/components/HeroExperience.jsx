@@ -502,6 +502,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
   const cylinderRefs = useRef([]);
   const badgeRefs = useRef([]);
   const hoveredRingIndexRef = useRef(-1);
+  const isConveyorSettledRef = useRef(false);
 
   const calloutTrRef = useRef(null);
   const calloutBlRef = useRef(null);
@@ -617,11 +618,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
       window.scrollTo(0, 0);
     }
 
-    // Eagerly preload all 5 ring models so they are downloaded, Draco-decompressed,
-    // and cached in memory while the user is still in the Hero section.
-    SPACE_ITEMS.forEach((item) => {
-      if (item.glb) preloadRingGLTF(item.glb);
-    });
+    // Progressive loading tracker: rings are preloaded on-demand as the user scrolls
+    const preloadedRingIndices = new Set();
 
     const ctx = gsap.context(() => {
       const haulo = hauloRef.current;
@@ -780,6 +778,14 @@ export const HeroExperience = forwardRef(function HeroExperience(
         ? badgeRefs.current
         : Array.from(spaceWorldEl ? spaceWorldEl.querySelectorAll('.ring-view-case-badge') : []);
 
+      // Pre-initialize static transforms once to avoid redundant style recalculations
+      ringEls.forEach((el) => {
+        if (el) gsap.set(el, { rotationX: 0, rotationY: 0, rotationZ: 0 });
+      });
+      cylinderEls.forEach((el) => {
+        if (el) gsap.set(el, { rotationY: 0 });
+      });
+
       const ringSetters = ringEls.map((el) => {
         if (!el) return null;
         return {
@@ -787,20 +793,11 @@ export const HeroExperience = forwardRef(function HeroExperience(
           y: gsap.quickSetter(el, 'y', 'px'),
           z: gsap.quickSetter(el, 'z', 'px'),
           scale: gsap.quickSetter(el, 'scale'),
-          rotationX: gsap.quickSetter(el, 'rotationX', 'deg'),
-          rotationY: gsap.quickSetter(el, 'rotationY', 'deg'),
-          rotationZ: gsap.quickSetter(el, 'rotationZ', 'deg'),
           opacity: gsap.quickSetter(el, 'opacity'),
           visibility: gsap.quickSetter(el, 'visibility')
         };
       });
 
-      const cylinderSetters = cylinderEls.map((el) => {
-        if (!el) return null;
-        return {
-          rotationY: gsap.quickSetter(el, 'rotationY', 'deg')
-        };
-      });
 
       const badgeSetters = badgeEls.map((el) => {
         if (!el) return null;
@@ -815,17 +812,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
       const badgeAlphas = new Float32Array(SPACE_COUNT).fill(0.0);
       const badgeScales = new Float32Array(SPACE_COUNT).fill(0.6);
 
-      let mouseTiltX = 0;
-      let mouseTiltY = 0;
-      let targetTiltX = 0;
-      let targetTiltY = 0;
-
-      const onPointerMove = (e) => {
-        // Keep 3D ring & world completely static during mouse cursor moves
-        targetTiltX = 0;
-        targetTiltY = 0;
-      };
-      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      const wordVisibleState = new Array(wordElements.length).fill(true);
+      const ringVisibleState = new Array(SPACE_COUNT).fill(true);
 
       // Background element setters
       const causticsEl = causticsRef.current;
@@ -933,7 +921,6 @@ export const HeroExperience = forwardRef(function HeroExperience(
         3.20
       ];
       const TOTAL_SPACE_TRAVEL = 0.50 + RING_OFFSETS[SPACE_COUNT - 1];
-      let currentGlobalProgress = 0;
 
       // Snappy micro-animation when landing on a new word after jumping
       const playPinkLineLandingAnim = () => {
@@ -1026,6 +1013,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
       let spaceElevTracker = 0.050; // +0.050 = up side for scroll down, -0.050 = down side for scroll up
       let ringSwimPosition = null;
       let ringSwimLastUpdate = 0;
+      let lastRenderedProgress = -1;
 
       function updateConveyor(globalProgress) {
         const deltaProgress = globalProgress - lastScrollProgress;
@@ -1094,10 +1082,14 @@ export const HeroExperience = forwardRef(function HeroExperience(
           }
 
           if (localProgress < 0.00 || localProgress > 1.00 || globalProgress > CONVEYOR_SCENE_END) {
-            wordSetters[index].opacity(0);
-            wordSetters[index].visibility('hidden');
+            if (wordVisibleState[index]) {
+              wordSetters[index].opacity(0);
+              wordSetters[index].visibility('hidden');
+              wordVisibleState[index] = false;
+            }
             return;
           }
+          wordVisibleState[index] = true;
 
           // NO BLUR WHEN WORD IN AND OUT: Crisp solid opacity across entire visible flight
           let wordAlpha = 1;
@@ -1408,7 +1400,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
             frogSet.scaleY(currentScaleY);
           }
           frogSet.rotation(0);
-          frogSet.opacity(frogAlpha);
+          frogSet.opacity(sharedFrogRingRef.current >= 0 ? 0 : frogAlpha);
           let spaceScrollPhase = 0;
           if (globalProgress > HERO_HOLD_END && globalProgress <= SPACE_FOCUS_START) {
             spaceScrollPhase = (globalProgress - HERO_HOLD_END) / (SPACE_FOCUS_START - HERO_HOLD_END);
@@ -1517,6 +1509,19 @@ export const HeroExperience = forwardRef(function HeroExperience(
 
         const travel = ringTravel;
 
+        // Progressive lazy loading triggers:
+        // Ring 0 (Portfolio Intro): preload when user enters Editorial Hero (progress >= 0.35)
+        if (globalProgress >= 0.35 && !preloadedRingIndices.has(0)) {
+          preloadedRingIndices.add(0);
+          if (SPACE_ITEMS[0]?.glb) preloadRingGLTF(SPACE_ITEMS[0].glb);
+        }
+
+        // Ring 1 (Theory of Bloom): preload when user nears end of Editorial Hero (progress >= 0.48)
+        if (globalProgress >= 0.48 && !preloadedRingIndices.has(1)) {
+          preloadedRingIndices.add(1);
+          if (SPACE_ITEMS[1]?.glb) preloadRingGLTF(SPACE_ITEMS[1].glb);
+        }
+
         let sumWeight = 0;
         let sumX = 0;
         let sumY = 0;
@@ -1524,10 +1529,17 @@ export const HeroExperience = forwardRef(function HeroExperience(
         for (let i = 0; i < SPACE_COUNT; i++) {
           const localT = travel - RING_OFFSETS[i];
           const rSetter = ringSetters[i];
-          const cSetter = cylinderSetters[i];
           const bSetter = badgeSetters[i];
 
           if (!rSetter) continue;
+
+          // Progressive viewport-based preloading for project rings (0.60 advance buffer)
+          if (localT >= -0.60 && !preloadedRingIndices.has(i)) {
+            preloadedRingIndices.add(i);
+            if (SPACE_ITEMS[i]?.glb) {
+              preloadRingGLTF(SPACE_ITEMS[i].glb);
+            }
+          }
 
           // Interactive Hover Zoom & VIEW CASE Badge Animation
           const isHovered = (hoveredRingIndexRef.current === i);
@@ -1541,13 +1553,27 @@ export const HeroExperience = forwardRef(function HeroExperience(
 
           // Strictly hide inactive rings outside visible viewport bounds
           if (localT < -0.08 || localT > 1.08 || globalProgress < SPACE_START) {
-            rSetter.opacity(0);
-            rSetter.visibility('hidden');
-            if (bSetter) {
-              bSetter.opacity(0);
-              bSetter.visibility('hidden');
+            if (ringVisibleState[i]) {
+              rSetter.opacity(0);
+              rSetter.visibility('hidden');
+              if (bSetter) {
+                bSetter.opacity(0);
+                bSetter.visibility('hidden');
+              }
+              ringVisibleState[i] = false;
             }
+            const ringContainer = ringEls[i]?.querySelector('.ring-3d-model-container');
+            ringContainer?.stopRenderLoop?.();
             continue;
+          }
+          ringVisibleState[i] = true;
+
+          // Ensure model instance is mounted & rendered when ring is active in viewport
+          const ringContainer = ringEls[i]?.querySelector('.ring-3d-model-container');
+          if (ringContainer?.ensureModelLoaded) {
+            ringContainer.ensureModelLoaded();
+          } else if (ringContainer?.startRenderLoop) {
+            ringContainer.startRenderLoop();
           }
 
           // Smooth harmonic pacing around focal center (localT = 0.50)
@@ -1572,15 +1598,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
           rSetter.y(tf.y - stageLift);
           rSetter.z(tf.z);
           rSetter.scale(tf.scale);
-          rSetter.rotationX(0);
-          rSetter.rotationY(0);
-          rSetter.rotationZ(0);
           rSetter.opacity(ringAlpha);
           rSetter.visibility(ringAlpha > 0.001 ? 'visible' : 'hidden');
-
-          if (cSetter) {
-            cSetter.rotationY(0);
-          }
 
           if (bSetter) {
             bSetter.opacity(badgeAlphas[i]);
@@ -1688,6 +1707,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
           const targetNdcY = -(2 * targetScreenY) / (geo.vh || 1);
           container?.setSharedFrogScreenTarget?.(targetNdcX, targetNdcY, lockWeight);
           if (container?.mountSharedFrog?.(sharedFrogRoot, handoffScreenPosition)) {
+            frogFacingRef.current?.setMountedInRing?.(true);
             if (previousRing !== -1 && previousRing !== focusedProjectRing) {
               previousContainer?.unmountSharedFrog?.(sharedFrogRoot);
               if (previousRing >= 0 && ringRefs.current[previousRing]) {
@@ -1937,6 +1957,39 @@ export const HeroExperience = forwardRef(function HeroExperience(
             playPinkLineLandingAnim();
           }
         }
+
+        // Settling check: detect if conveyor and all dynamic interpolations are settled
+        let stillAnimating = false;
+        for (let i = 0; i < SPACE_COUNT; i++) {
+          const isHov = (hoveredRingIndexRef.current === i);
+          const tAlpha = isHov ? 1.0 : 0.0;
+          const tScale = isHov ? 1.0 : 0.6;
+          if (Math.abs(badgeAlphas[i] - tAlpha) > 0.002 || Math.abs(badgeScales[i] - tScale) > 0.002) {
+            stillAnimating = true;
+            break;
+          }
+        }
+        if (!stillAnimating) {
+          if (Math.abs(spaceTargetTurn - spaceDirTurnTracker) > 0.002 ||
+              Math.abs(targetRingElev - spaceElevTracker) > 0.002 ||
+              Math.abs(targetDirTurn - currentDirTurn) > 0.002) {
+            stillAnimating = true;
+          }
+        }
+
+        if (!stillAnimating && Math.abs(globalProgress - lastRenderedProgress) < 0.00001) {
+          // Snap badge and tracker values to exact targets
+          for (let i = 0; i < SPACE_COUNT; i++) {
+            const isHov = (hoveredRingIndexRef.current === i);
+            badgeAlphas[i] = isHov ? 1.0 : 0.0;
+            badgeScales[i] = isHov ? 1.0 : 0.6;
+          }
+          spaceDirTurnTracker = spaceTargetTurn;
+          spaceElevTracker = targetRingElev;
+          currentDirTurn = targetDirTurn;
+          isConveyorSettledRef.current = true;
+        }
+        lastRenderedProgress = globalProgress;
       }
 
       // Store conveyor reference for external journey handoff
@@ -1951,10 +2004,13 @@ export const HeroExperience = forwardRef(function HeroExperience(
       // EXTENDED MASTER PINNED SCROLLTRIGGER ACROSS ALL 4 PHASES
       // Bottom hero CTAs + text: hide AND disable the whole bottom caption as
       // soon as the user scrolls (buttons + "WE BUILD WHAT'S NEXT." text).
+      let bottomCaptionHiddenState = false;
       const updateHeroButtons = (progress) => {
         if (!bottomCaptionEl) return;
         const p = Math.min(1, Math.max(0, progress * 18));
         const hidden = p > 0.001;
+        if (p >= 1 && bottomCaptionHiddenState) return;
+        bottomCaptionHiddenState = (p >= 1);
         bottomCaptionEl.classList.toggle('is-scroll-disabled', hidden);
         gsap.set(bottomCaptionEl, {
           autoAlpha: 1 - p,
@@ -1980,11 +2036,13 @@ export const HeroExperience = forwardRef(function HeroExperience(
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           if (!heroActiveRef.current) return;
+          isConveyorSettledRef.current = false;
           updateConveyor(self.progress);
           updateHeroButtons(self.progress);
         },
         onRefresh: (self) => {
           if (!heroActiveRef.current) return;
+          isConveyorSettledRef.current = false;
           updateConveyor(self.progress);
           updateHeroButtons(self.progress);
         }
@@ -2011,30 +2069,37 @@ export const HeroExperience = forwardRef(function HeroExperience(
       ];
       let isWordAnimating = false;
       let wordAnimSafetyTimer = null;
+      let activeTargetProgress = null;
 
       const finishWordAnimation = () => {
         if (wordAnimSafetyTimer) {
           clearTimeout(wordAnimSafetyTimer);
           wordAnimSafetyTimer = null;
         }
+        activeTargetProgress = null;
         setTimeout(() => {
           isWordAnimating = false;
-        }, 50);
+        }, 30);
       };
 
-      const animateToScrollY = (targetY, duration) => {
+      const animateToScrollY = (targetY, duration, options = {}) => {
+        const { isTouch = false, targetProgress = null } = options;
         isWordAnimating = true;
-        const jumpDuration = typeof duration === 'number' ? duration : 1.20;
+        if (targetProgress !== null) {
+          activeTargetProgress = targetProgress;
+        }
+        const jumpDuration = typeof duration === 'number' ? duration : (isTouch ? 0.85 : 1.20);
         if (wordAnimSafetyTimer) clearTimeout(wordAnimSafetyTimer);
         wordAnimSafetyTimer = setTimeout(() => {
           isWordAnimating = false;
+          activeTargetProgress = null;
           wordAnimSafetyTimer = null;
-        }, (jumpDuration + 0.2) * 1000);
+        }, (jumpDuration + 0.15) * 1000);
         if (window.lenis) {
           window.lenis.scrollTo(targetY, {
             duration: jumpDuration,
             easing: (t) => 1 - Math.pow(1 - t, 2.2),
-            lock: true,
+            lock: !isTouch,
             force: true,
             onComplete: finishWordAnimation
           });
@@ -2098,9 +2163,13 @@ export const HeroExperience = forwardRef(function HeroExperience(
       };
 
       let touchStartY = 0;
+      let touchStartX = 0;
+      let lastTouchTriggerTime = 0;
+
       const handleTouchStart = (e) => {
         if (e.touches && e.touches[0]) {
           touchStartY = e.touches[0].clientY;
+          touchStartX = e.touches[0].clientX;
         }
       };
 
@@ -2114,61 +2183,80 @@ export const HeroExperience = forwardRef(function HeroExperience(
         const snapLimitY = startY + 1.05 * totalDist;
         if (currentY >= startY - 10 && currentY <= snapLimitY) {
           const deltaY = touchStartY - e.touches[0].clientY;
-          if (Math.abs(deltaY) < 16) return;
+          const deltaX = touchStartX - e.touches[0].clientX;
 
-          if (isWordAnimating) {
+          // Ignore minor finger jitter (< 18px) or horizontal-dominant swipes
+          if (Math.abs(deltaY) < 18 || Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+            return;
+          }
+
+          const now = performance.now();
+          // Throttle consecutive step triggers (minimum 220ms apart) so one swipe does not skip multiple steps
+          if (now - lastTouchTriggerTime < 220) {
             e.preventDefault();
             return;
           }
 
-          touchStartY = e.touches[0].clientY;
           const currentProgress = Math.max(0, (currentY - startY) / totalDist);
 
           if (deltaY > 0) {
-            // Swipe UP -> scroll DOWN
+            // Swipe UP -> advance forward (scroll DOWN)
             scrollDirection = 1;
-            const nextStep = SNAP_STEPS.find((s) => s > currentProgress + 0.012);
+            const baseProgress = (isWordAnimating && activeTargetProgress !== null && activeTargetProgress >= currentProgress)
+              ? activeTargetProgress
+              : currentProgress;
+
+            const nextStep = SNAP_STEPS.find((s) => s > baseProgress + 0.012);
             if (nextStep !== undefined) {
               e.preventDefault();
+              touchStartY = e.touches[0].clientY;
+              touchStartX = e.touches[0].clientX;
+              lastTouchTriggerTime = now;
               const targetY = startY + nextStep * totalDist;
               const isRingFlight = (currentProgress >= 0.40 && nextStep >= 0.55);
-              animateToScrollY(targetY, isRingFlight ? 2.15 : 1.20);
+              animateToScrollY(targetY, isRingFlight ? 1.35 : 0.85, {
+                isTouch: true,
+                targetProgress: nextStep
+              });
             }
           } else if (deltaY < 0) {
-            // Swipe DOWN -> scroll UP
+            // Swipe DOWN -> advance backward (scroll UP)
             scrollDirection = -1;
-            const prevStep = [...SNAP_STEPS].reverse().find((s) => s < currentProgress - 0.012);
+            const baseProgress = (isWordAnimating && activeTargetProgress !== null && activeTargetProgress <= currentProgress)
+              ? activeTargetProgress
+              : currentProgress;
+
+            const prevStep = [...SNAP_STEPS].reverse().find((s) => s < baseProgress - 0.012);
             if (prevStep !== undefined) {
               e.preventDefault();
+              touchStartY = e.touches[0].clientY;
+              touchStartX = e.touches[0].clientX;
+              lastTouchTriggerTime = now;
               const targetY = startY + prevStep * totalDist;
               const isRingFlight = (currentProgress >= 0.55 && prevStep >= 0.45);
-              animateToScrollY(targetY, isRingFlight ? 2.15 : 1.20);
+              animateToScrollY(targetY, isRingFlight ? 1.35 : 0.85, {
+                isTouch: true,
+                targetProgress: prevStep
+              });
             }
           }
         }
       };
 
+      const handleTouchEnd = () => {
+        touchStartY = 0;
+        touchStartX = 0;
+      };
+
       window.addEventListener('wheel', handleWheel, { passive: false });
       window.addEventListener('touchstart', handleTouchStart, { passive: true });
       window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd, { passive: true });
+      window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
 
-      let autoCylRotY = 0;
-
-      const tickerUpdate = (time, deltaTime) => {
-        if (!heroActiveRef.current) return;
-
-        for (let i = 0; i < cylinderSetters.length; i++) {
-          const cSetter = cylinderSetters[i];
-          if (cSetter) {
-            cSetter.rotationY(0);
-          }
-        }
-
-        if (currentGlobalProgress >= SPACE_START) {
-          mouseTiltX += (targetTiltX - mouseTiltX) * 0.08;
-          mouseTiltY += (targetTiltY - mouseTiltY) * 0.08;
-          updateConveyor(currentGlobalProgress);
-        }
+      const tickerUpdate = () => {
+        if (!heroActiveRef.current || isConveyorSettledRef.current) return;
+        updateConveyor(lastScrollProgress);
       };
       gsap.ticker.add(tickerUpdate);
 
@@ -2178,10 +2266,11 @@ export const HeroExperience = forwardRef(function HeroExperience(
         }
         clearTimeout(dimTimer);
         window.removeEventListener('resize', refreshDims);
-        window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('wheel', handleWheel);
         window.removeEventListener('touchstart', handleTouchStart);
         window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
+        window.removeEventListener('touchcancel', handleTouchEnd);
         gsap.ticker.remove(tickerUpdate);
       };
     });
@@ -2242,8 +2331,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
                   ringRefs={ringRefs}
                   cylinderRefs={cylinderRefs}
                   badgeRefs={badgeRefs}
-                  onRingMouseEnter={(idx) => { hoveredRingIndexRef.current = idx; }}
-                  onRingMouseLeave={() => { hoveredRingIndexRef.current = -1; }}
+                  onRingMouseEnter={(idx) => { hoveredRingIndexRef.current = idx; isConveyorSettledRef.current = false; }}
+                  onRingMouseLeave={() => { hoveredRingIndexRef.current = -1; isConveyorSettledRef.current = false; }}
                 />
 
 

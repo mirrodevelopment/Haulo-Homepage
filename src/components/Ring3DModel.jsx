@@ -628,7 +628,7 @@ export function Ring3DModel({
   const textOverlayRef = useRef(null);
   const onButtonClickRef = useRef(onButtonClick);
   onButtonClickRef.current = onButtonClick;
-  const restoreExpandedNodesRef = useRef(() => {});
+  const restoreExpandedNodesRef = useRef(() => { });
   const setCanvasNode = useCallback((node) => {
     canvasRef.current = node;
     if (!node) restoreExpandedNodesRef.current();
@@ -733,8 +733,11 @@ export function Ring3DModel({
         antialias: true,
         powerPreference: 'high-performance',
       });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.setSize(baseW, baseH, false);
+      const isMobile = window.innerWidth < 768;
+      const initialDPR = isMobile
+        ? Math.min(window.devicePixelRatio || 1, 1.5)
+        : Math.min(window.devicePixelRatio || 1, 2);
+      renderer.setPixelRatio(initialDPR);
       renderer.setClearColor(0x000000, 0); // Transparent background
       renderer.toneMapping = THREE.LinearToneMapping;
       renderer.toneMappingExposure = 1.10;
@@ -839,11 +842,42 @@ export function Ring3DModel({
         textOverlayLayoutDirty = true;
       }
     };
+
+    const updateRendererSize = () => {
+      if (!renderer || !container) return;
+      if (expandedForSharedFrog) {
+        resizeExpandedCanvas();
+        return;
+      }
+
+      const rect = container.getBoundingClientRect();
+      const displayW = Math.round(rect.width || container.clientWidth || baseW);
+      if (displayW <= 0) return;
+
+      const isMobile = window.innerWidth < 768;
+      const targetDPR = isMobile
+        ? Math.min(window.devicePixelRatio || 1, 1.5)
+        : Math.min(window.devicePixelRatio || 1, 2);
+
+      if (renderer.getPixelRatio() !== targetDPR) {
+        renderer.setPixelRatio(targetDPR);
+      }
+
+      const targetW = Math.min(baseW, Math.max(280, displayW));
+      const targetH = Math.round(targetW * (baseH / baseW));
+
+      renderer.setSize(targetW, targetH, false);
+      if (camera) {
+        camera.aspect = baseW / baseH;
+        camera.updateProjectionMatrix();
+      }
+    };
+
     const overlayResizeObserver = new ResizeObserver(() => {
       textOverlayLayoutDirty = true;
-      resizeExpandedCanvas();
+      updateRendererSize();
     });
-    window.addEventListener('resize', resizeExpandedCanvas);
+    window.addEventListener('resize', updateRendererSize);
     overlayResizeObserver.observe(container);
 
     // ---- SCENE & SHARED ENVIRONMENT ----
@@ -857,6 +891,7 @@ export function Ring3DModel({
     // Aspect ratio and camera setup
     const aspect = baseW / baseH;
     camera = new THREE.PerspectiveCamera(baseFovDeg, aspect, 0.1, 100);
+    updateRendererSize();
 
     if (isIntro) {
       // Intro camera: centered view onto the slanting ring matching reference image
@@ -1167,7 +1202,7 @@ export function Ring3DModel({
         if (renderer && scene && camera) {
           try {
             renderer.render(scene, camera);
-          } catch (_) {}
+          } catch (_) { }
         }
       }
       return true;
@@ -1207,10 +1242,19 @@ export function Ring3DModel({
         lastProjectedW = NaN;
         textOverlayLayoutDirty = true;
       }
+      // Explicitly clear color, depth, and stencil buffers to transparent (0,0,0,0)
+      // and redraw the ring so zero stale frog pixels remain in this ring's WebGL buffer
+      if (renderer && scene && camera) {
+        try {
+          renderer.clear(true, true, true);
+          renderer.render(scene, camera);
+        } catch (_) { }
+      }
     };
 
     let hasWarmedUpShaders = false;
     container.warmupWithSharedFrog = (frogRoot) => {
+      loadModel();
       if (!frogRoot || !scene || !camera || !renderer) return;
       if (hasWarmedUpShaders) return;
       try {
@@ -1224,7 +1268,12 @@ export function Ring3DModel({
           frogRoot.parent.remove(frogRoot);
         }
         hasWarmedUpShaders = true;
-      } catch (_) {}
+      } catch (_) { }
+    };
+
+    container.ensureModelLoaded = () => {
+      loadModel();
+      startRenderLoop();
     };
 
     // Procedural attachments (ONLY if explicitly enabled, never on pure models)
@@ -1613,10 +1662,10 @@ export function Ring3DModel({
             const linesToUse = (textContent && textContent.description && textContent.description.length > 0)
               ? textContent.description
               : (isTheoryOfBloom ? DEFAULT_DESCRIPTIONS.bloom
-                  : isStakor ? DEFAULT_DESCRIPTIONS.stakor
+                : isStakor ? DEFAULT_DESCRIPTIONS.stakor
                   : isAwknModel ? DEFAULT_DESCRIPTIONS.awkn
-                  : isTrulyBare ? DEFAULT_DESCRIPTIONS.truly
-                  : DEFAULT_DESCRIPTIONS.bloom);
+                    : isTrulyBare ? DEFAULT_DESCRIPTIONS.truly
+                      : DEFAULT_DESCRIPTIONS.bloom);
 
             descriptionMesh = createDescriptionCurvedMesh(
               linesToUse,
@@ -1781,7 +1830,7 @@ export function Ring3DModel({
           if (renderer && scene && camera) {
             try {
               renderer.compile(scene, camera);
-            } catch (_) {}
+            } catch (_) { }
           }
         })
         .catch((err) => {
@@ -1789,8 +1838,8 @@ export function Ring3DModel({
         });
     };
 
-    // Preload all 3D ring models immediately on mount so 3D rings are ready before scrolling
-    loadModel();
+    // Progressive/viewport-based lazy loading: loadModel is triggered via
+    // IntersectionObserver, ensureModelLoaded, mountSharedFrog, or scroll preloading.
 
     // ---- PAUSABLE RENDER LOOP (FREEZES GPU WHEN OFF-SCREEN OR HIDDEN) ----
     let lastRenderTime = performance.now();
@@ -1800,12 +1849,14 @@ export function Ring3DModel({
       lastRenderTime = performance.now();
 
       const render = () => {
-        animationFrameId = requestAnimationFrame(render);
-
-        // Immediate 0-cost skip if parent container was marked hidden by GSAP conveyor (unless actively hosting the shared frog)
-        if (parentRing && !sharedFrog && (parentRing.style.visibility === 'hidden' || parentRing.style.opacity === '0')) {
+        // Stop scheduling RAF callbacks completely if parent container was marked hidden by GSAP
+        // and does NOT host the shared frog. Completely drops inactive ring RAF callbacks to 0.
+        if (parentRing && !sharedFrog && !expandedForSharedFrog && (parentRing.style.visibility === 'hidden' || parentRing.style.opacity === '0')) {
+          animationFrameId = null;
           return;
         }
+
+        animationFrameId = requestAnimationFrame(render);
 
         const now = performance.now();
         const dt = Math.min(Math.max(0, (now - lastRenderTime) / 1000), 0.1);
@@ -1813,7 +1864,13 @@ export function Ring3DModel({
 
         if (expandedForSharedFrog) {
           syncExpandedCameraToContainer();
-          if (sharedFrog) {
+        }
+
+        if (sharedFrog) {
+          if (typeof sharedFrog.tickFrogAnimation === 'function') {
+            sharedFrog.tickFrogAnimation(dt, now);
+          }
+          if (expandedForSharedFrog) {
             alignSharedFrogToOpening(sharedFrog, 1);
           }
         }
@@ -1838,18 +1895,32 @@ export function Ring3DModel({
 
         if (renderer && scene && camera) {
           renderer.render(scene, camera);
+          if (!container.hasLoggedCalls && renderer.info.render.calls > 0) {
+            container.hasLoggedCalls = true;
+            console.log(`[Three.js Telemetry] ${glbUrl.split('/').pop()} -> Actual Draw Calls: ${renderer.info.render.calls}, Triangles: ${renderer.info.render.triangles.toLocaleString()}`);
+          }
         }
       };
       render();
     };
 
     const stopRenderLoop = () => {
+      if (!isMounted) {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+        return;
+      }
       if (sharedFrog || expandedForSharedFrog) return;
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
     };
+
+    container.startRenderLoop = startRenderLoop;
+    container.stopRenderLoop = stopRenderLoop;
 
     // ---- INTERSECTION OBSERVER FOR LAZY LOADING & GPU PAUSING ----
     const intersectionObserver = new IntersectionObserver(
@@ -1865,7 +1936,7 @@ export function Ring3DModel({
         }
       },
       {
-        rootMargin: isIntro ? '0px' : '600px 0px 600px 0px',
+        rootMargin: '600px 0px 600px 0px',
         threshold: 0.01,
       }
     );
@@ -1878,12 +1949,15 @@ export function Ring3DModel({
       if (descriptionMesh && descriptionMesh.userData.dispose) descriptionMesh.userData.dispose();
       if (container.mountSharedFrog) delete container.mountSharedFrog;
       if (container.unmountSharedFrog) delete container.unmountSharedFrog;
+      if (container.ensureModelLoaded) delete container.ensureModelLoaded;
+      if (container.startRenderLoop) delete container.startRenderLoop;
+      if (container.stopRenderLoop) delete container.stopRenderLoop;
       // Also restore the React-owned canvas if this component unmounts mid-pass.
       restoreExpandedNodes();
-      restoreExpandedNodesRef.current = () => {};
+      restoreExpandedNodesRef.current = () => { };
       intersectionObserver.disconnect();
       overlayResizeObserver.disconnect();
-      window.removeEventListener('resize', resizeExpandedCanvas);
+      window.removeEventListener('resize', updateRendererSize);
       if (renderer) {
         renderer.dispose();
       }

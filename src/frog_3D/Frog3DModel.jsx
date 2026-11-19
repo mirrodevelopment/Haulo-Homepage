@@ -326,6 +326,11 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     let currentPRel = wordIndex || 0;
     const floorY = actionConfig.position[1]; // Ground baseline elevation
 
+    let isHeroVisible = true;
+    let isMountedInRing = false;
+    let startHeroRenderLoop = () => {};
+    let stopHeroRenderLoop = () => {};
+
     // ---- CAMERA ----
     const width = container.clientWidth || 1000;
     const height = container.clientHeight || 600;
@@ -471,8 +476,20 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
       // the ring opening instead of aligning the canvas frame alone.
       facingRef.current.getBodyScreenOffset = () => bodyScreenOffset;
       facingRef.current.getSharedRoot = () => rootGroup;
+      facingRef.current.setMountedInRing = (mounted) => {
+        isMountedInRing = Boolean(mounted);
+        if (isMountedInRing) {
+          stopHeroRenderLoop();
+        } else if (isHeroVisible && rootGroup.parent === scene) {
+          startHeroRenderLoop();
+        }
+      };
       facingRef.current.restoreSharedRoot = () => {
         if (rootGroup.parent !== scene) scene.add(rootGroup);
+        isMountedInRing = false;
+        if (isHeroVisible) {
+          startHeroRenderLoop();
+        }
       };
       facingRef.current.renderNow = () => {
         renderer.render(scene, camera);
@@ -513,6 +530,15 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
       const h = container.clientHeight || 600;
       const aspect = w / h;
       camera.aspect = aspect;
+
+      const isMobile = window.innerWidth < 768;
+      const targetDPR = isMobile
+        ? Math.min(window.devicePixelRatio || 1, 1.5)
+        : Math.min(window.devicePixelRatio || 1, 2);
+
+      if (renderer.getPixelRatio() !== targetDPR) {
+        renderer.setPixelRatio(targetDPR);
+      }
 
       // On portrait mobile (aspect < 1.0), adjust FOV and camera distance
       // so the frog's splayed legs and swimming action remain fully visible without clipping.
@@ -861,23 +887,21 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
         model.scale.setScalar(actionConfig.scale * initialMeshScaleMult);
         model.rotation.set(...actionConfig.rotation);
         rootGroup.add(model);
+        if (isHeroVisible && !isMountedInRing && rootGroup.parent === scene) {
+          startHeroRenderLoop();
+        }
       })
       .catch((err) => {
         console.error('[Frog3D] Error rendering frog model:', err);
       });
 
-    // ---- RENDER LOOP ----
+    // ---- RENDER LOOP & ANIMATION LIFECYCLE ----
     let lastTime = performance.now();
     const startTime = performance.now();
     let wasJumping = false;
     let lastLandTime = -999;
 
-    function animate() {
-      animFrameId = requestAnimationFrame(animate);
-
-      const now = performance.now();
-      const delta = Math.min((now - lastTime) / 1000, 0.1);
-      lastTime = now;
+    function tickFrogAnimation(delta, now) {
       const elapsed = (now - startTime) / 1000;
 
       if (modelInstance && mixer) {
@@ -1214,22 +1238,76 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
         }
       }
 
+      rootGroup.updateMatrixWorld(true);
+
       if (bodyBone && modelInstance && rootGroup.parent === scene) {
-        rootGroup.updateMatrixWorld(true);
         bodyBone.getWorldPosition(bodyWorldPosition).project(camera);
         bodyScreenOffset.x = bodyWorldPosition.x * (container.clientWidth || width) * 0.5;
         bodyScreenOffset.y = -bodyWorldPosition.y * (container.clientHeight || height) * 0.5;
       }
-
-      renderer.render(scene, camera);
     }
 
-    animate();
+    // Expose animation tick so the active mechanical ring can drive the frog directly
+    rootGroup.tickFrogAnimation = tickFrogAnimation;
+
+    startHeroRenderLoop = () => {
+      if (animFrameId || !isMounted || !isHeroVisible || isMountedInRing || rootGroup.parent !== scene) return;
+      lastTime = performance.now();
+
+      const animate = () => {
+        if (!isMounted || !isHeroVisible || isMountedInRing || rootGroup.parent !== scene) {
+          animFrameId = null;
+          return;
+        }
+        animFrameId = requestAnimationFrame(animate);
+
+        const now = performance.now();
+        const delta = Math.min((now - lastTime) / 1000, 0.1);
+        lastTime = now;
+
+        tickFrogAnimation(delta, now);
+
+        renderer.render(scene, camera);
+      };
+
+      animate();
+    };
+
+    stopHeroRenderLoop = () => {
+      if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+    };
+
+    // ---- VIEWPORT INTERSECTION OBSERVER FOR HERO FROG ----
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        isHeroVisible = entry.isIntersecting;
+        if (isHeroVisible) {
+          startHeroRenderLoop();
+        } else {
+          stopHeroRenderLoop();
+        }
+      },
+      {
+        rootMargin: '300px 0px 300px 0px',
+        threshold: 0.01,
+      }
+    );
+    if (container) {
+      intersectionObserver.observe(container);
+    }
+
+    startHeroRenderLoop();
 
     // ---- CLEANUP ----
     return () => {
       isMounted = false;
-      cancelAnimationFrame(animFrameId);
+      stopHeroRenderLoop();
+      if (intersectionObserver) {
+        intersectionObserver.disconnect();
+      }
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('keydown', handleKeyDown);
       canvas.removeEventListener('click', handleCanvasClick);
