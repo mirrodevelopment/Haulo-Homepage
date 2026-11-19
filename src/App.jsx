@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useLenis } from './hooks/useLenis';
 import { HeroExperience } from './components/HeroExperience';
-import { ContactPage } from './pages/ContactPage';
 import { CustomCursor } from './components/CustomCursor';
 
 function ScrollToTop() {
@@ -32,7 +31,6 @@ function AppContent() {
       <div className="app-container">
         <Routes>
           <Route path="/" element={<HeroExperience ref={heroRef} />} />
-          <Route path="/contact" element={<ContactPage />} />
           <Route path="*" element={<HeroExperience ref={heroRef} />} />
         </Routes>
       </div>

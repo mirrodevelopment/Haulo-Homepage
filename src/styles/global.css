@@ -239,8 +239,7 @@ header a[aria-label="HAULO Home"] img {
 }
 
 header .header-nav .nav-link,
-.header-container .nav-link,
-.about-header .nav-link {
+.header-container .nav-link {
   font-family: 'Space Mono', monospace !important;
   font-weight: 600 !important;
   letter-spacing: 0.02em !important;

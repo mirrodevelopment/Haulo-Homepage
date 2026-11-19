@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { SPACE_ITEMS } from '../data/projects';
 import { Ring3DModel } from './Ring3DModel';
 
@@ -22,7 +21,6 @@ export function NextSection({
   space3Ref,
   space4Ref,
 }) {
-  const navigate = useNavigate();
   return (
     <div className="portfolio-world space-portfolio-world" ref={stageRef}>
       <div className="portfolio-ring-track space-portfolio-track">
@@ -59,7 +57,7 @@ export function NextSection({
                         variant="intro"
                         buttonText="EXPLORE WORK ↗"
                         onButtonClick={() => {
-                          navigate('/work');
+                          window.__hauloScrollTo?.('work');
                         }}
                       />
                     </div>
@@ -89,7 +87,7 @@ export function NextSection({
                             if (item.href && item.href !== '#') {
                               window.open(item.href, '_blank', 'noopener,noreferrer');
                             } else {
-                              navigate('/work');
+                              window.__hauloScrollTo?.('work');
                             }
                           }}
                         />
@@ -122,14 +120,16 @@ export function NextSection({
                   </div>
                 </a>
               ) : (
-                <Link
+                <a
                   className="ring-view-case-badge"
                   ref={(el) => {
                     if (badgeRefs && badgeRefs.current) badgeRefs.current[index] = el;
                   }}
-                  to="/work"
+                  href="#work"
                   aria-label={`View Project: ${item.title}`}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.__hauloScrollTo?.('work');
                     const container = ringRefs.current[index]?.querySelector('.ring-3d-model-container');
                     if (container?.pressRingButton) {
                       container.pressRingButton();
@@ -140,7 +140,7 @@ export function NextSection({
                     <span className="badge-text-line">VIEW</span>
                     <span className="badge-text-line">PROJECT ↗</span>
                   </div>
-                </Link>
+                </a>
               )}
             </div>
           );
@@ -152,7 +152,6 @@ export function NextSection({
 
 // Backwards-compatible named exports
 export function NextSectionLeft({ cardRef }) {
-  const navigate = useNavigate();
   return (
     <div className="next-space-box" ref={cardRef}>
       <Ring3DModel
@@ -162,7 +161,7 @@ export function NextSectionLeft({ cardRef }) {
         variant="intro"
         buttonText="EXPLORE WORK ↗"
         onButtonClick={() => {
-          navigate('/work');
+          window.__hauloScrollTo?.('work');
         }}
       />
     </div>

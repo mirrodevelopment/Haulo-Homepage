@@ -1792,7 +1792,7 @@ export function Ring3DModel({
                   } else if (projectUrl && projectUrl !== '#') {
                     window.open(projectUrl, '_blank', 'noopener,noreferrer');
                   } else {
-                    window.location.href = '/work';
+                    window.__hauloScrollTo?.('work');
                   }
                 }
               }
