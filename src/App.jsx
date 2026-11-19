@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useLenis } from './hooks/useLenis';
 import { HeroExperience } from './components/HeroExperience';
 import { CustomCursor } from './components/CustomCursor';
+import { LoadingScreen } from './components/LoadingScreen';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -27,6 +28,7 @@ function AppContent() {
     <>
       <ScrollToTop />
       <CustomCursor />
+      <LoadingScreen />
 
       <div className="app-container">
         <Routes>

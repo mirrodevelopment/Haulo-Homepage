@@ -95,9 +95,19 @@ function drawButtonTexture(ctx, width, height, text, isHovered, isPressed) {
   const label = (text || 'VIEW PROJECT ↗').trim();
   if (label) {
     ctx.save();
-    const fontSize = 84;
+    let fontSize = 84;
     ctx.font = `900 ${fontSize}px "Space Mono", "Roboto Mono", "Courier New", monospace, sans-serif`;
     ctx.textBaseline = 'middle';
+
+    const textX = barX + tickLen + 38;
+    const textY = height / 2;
+    const maxTextW = width - textX - 32;
+    const measuredW = ctx.measureText(label).width;
+
+    if (measuredW > maxTextW && measuredW > 0) {
+      fontSize = Math.floor(fontSize * (maxTextW / measuredW));
+      ctx.font = `900 ${fontSize}px "Space Mono", "Roboto Mono", "Courier New", monospace, sans-serif`;
+    }
 
     if (isHovered) {
       ctx.shadowColor = '#EAFF00';
@@ -113,8 +123,6 @@ function drawButtonTexture(ctx, width, height, text, isHovered, isPressed) {
       ctx.fillStyle = '#FFFFFF';
     }
 
-    const textX = barX + tickLen + 38;
-    const textY = height / 2;
     ctx.fillText(label, textX, textY);
     ctx.restore();
   }
@@ -909,7 +917,9 @@ export function Ring3DModel({
       camera.lookAt(target);
     }
 
-    // ---- BALANCED STUDIO LIGHTING (Symmetrical for scroll-up/scroll-down, softly dimmed to match reference image) ----
+    // ---- BALANCED STUDIO LIGHTING (Desktop: 8 DirectionalLights; Mobile: 4 DirectionalLights + Ambient) ----
+    const isMobile = window.innerWidth <= 900 || (window.innerWidth / (window.innerHeight || 1)) < 1.0;
+
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.65);
     keyLight.position.set(3, 7, 5);
     scene.add(keyLight);
@@ -926,23 +936,26 @@ export function Ring3DModel({
     bottomFillLight.position.set(5, -6, 6);
     scene.add(bottomFillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.95);
-    rimLight.position.set(-4, 5, -3);
-    scene.add(rimLight);
+    // Desktop auxiliary rim lights (rings on mobile already receive continuous 360-degree environment reflections via RoomEnvironment PMREM)
+    if (!isMobile) {
+      const rimLight = new THREE.DirectionalLight(0xffffff, 0.95);
+      rimLight.position.set(-4, 5, -3);
+      scene.add(rimLight);
 
-    const bottomRimLight = new THREE.DirectionalLight(0xffffff, 0.95);
-    bottomRimLight.position.set(4, -5, -3);
-    scene.add(bottomRimLight);
+      const bottomRimLight = new THREE.DirectionalLight(0xffffff, 0.95);
+      bottomRimLight.position.set(4, -5, -3);
+      scene.add(bottomRimLight);
 
-    const topRimLight = new THREE.DirectionalLight(0xffffff, 0.70);
-    topRimLight.position.set(0, 6, -2);
-    scene.add(topRimLight);
+      const topRimLight = new THREE.DirectionalLight(0xffffff, 0.70);
+      topRimLight.position.set(0, 6, -2);
+      scene.add(topRimLight);
 
-    const bottomTopRimLight = new THREE.DirectionalLight(0xffffff, 0.70);
-    bottomTopRimLight.position.set(0, -6, -2);
-    scene.add(bottomTopRimLight);
+      const bottomTopRimLight = new THREE.DirectionalLight(0xffffff, 0.70);
+      bottomTopRimLight.position.set(0, -6, -2);
+      scene.add(bottomTopRimLight);
+    }
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    const ambientLight = new THREE.AmbientLight(0xffffff, isMobile ? 0.70 : 0.65);
     scene.add(ambientLight);
 
     // Pivot group for orientation and pointer parallax

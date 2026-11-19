@@ -17,6 +17,9 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+# Scratch and experimental artifacts
+scratch/experiments/
+scratch/extracted_textures/
 scratch/edge-profile-box/
 *.suo
 *.ntvs*

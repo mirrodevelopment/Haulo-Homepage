@@ -4,7 +4,19 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-const frogModelUrl = `${import.meta.env.BASE_URL}FROG_3D.glb`;
+import { loadingManager } from '../services/loadingManager';
+function getFrogModelUrl() {
+  if (typeof window !== 'undefined') {
+    const isMobileDevice =
+      window.innerWidth <= 900 ||
+      (window.innerWidth / (window.innerHeight || 1)) < 1.0 ||
+      (('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 1024);
+    if (isMobileDevice) {
+      return `${import.meta.env.BASE_URL}FROG_3D_mobile.glb`;
+    }
+  }
+  return `${import.meta.env.BASE_URL}FROG_3D.glb`;
+}
 
 let cachedGLTF = null;
 let gltfLoadingPromise = null;
@@ -12,28 +24,49 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
 
 function loadFrogGLTF() {
-  if (cachedGLTF) return Promise.resolve(cachedGLTF);
+  if (cachedGLTF) {
+    loadingManager.setReady();
+    return Promise.resolve(cachedGLTF);
+  }
   if (gltfLoadingPromise) return gltfLoadingPromise;
 
+  const url = getFrogModelUrl();
   const loader = new GLTFLoader();
   loader.setDRACOLoader(dracoLoader);
   gltfLoadingPromise = new Promise((resolve, reject) => {
     loader.load(
-      frogModelUrl,
+      url,
       (gltf) => {
+        loadingManager.setProgress(0.88, 'parsing');
         cachedGLTF = gltf;
         gltfLoadingPromise = null;
         resolve(gltf);
       },
-      undefined,
+      (event) => {
+        if (event.lengthComputable && event.total > 0) {
+          const frac = event.loaded / event.total;
+          loadingManager.setProgress(frac * 0.85, 'downloading');
+        } else if (event.loaded > 0) {
+          const estTotal = 12 * 1024 * 1024;
+          const frac = Math.min(0.99, event.loaded / estTotal);
+          loadingManager.setProgress(frac * 0.85, 'downloading');
+        }
+      },
       (err) => {
         gltfLoadingPromise = null;
+        loadingManager.setError(err);
         reject(err);
       }
     );
   });
   return gltfLoadingPromise;
 }
+
+loadingManager.registerRetryHandler(() => {
+  cachedGLTF = null;
+  gltfLoadingPromise = null;
+  loadFrogGLTF();
+});
 
 const recoloredRingTextureCache = new Map();
 
@@ -344,8 +377,12 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     }
     camera.lookAt(0, actionConfig.targetY, 0);
 
-    // ---- STUDIO LIGHTING FOR VOLUMETRIC FORM & CRISP SPECULAR HIGHLIGHTS (Symmetrical for scroll-up/down) ----
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    // ---- STUDIO LIGHTING FOR VOLUMETRIC FORM & CRISP SPECULAR HIGHLIGHTS ----
+    // Desktop: full 8-directional symmetric studio array
+    // Mobile: 4 directional lights + calibrated ambient (eliminates 50% fragment shader lighting loops)
+    const isMobile = window.innerWidth <= 900 || (window.innerWidth / (window.innerHeight || 1)) < 1.0;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, isMobile ? 0.95 : 0.85);
     scene.add(ambientLight);
 
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -356,22 +393,6 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     bottomKeyLight.position.set(-3, -7, 5);
     scene.add(bottomKeyLight);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 1.3);
-    rimLight.position.set(-4, 5, -3);
-    scene.add(rimLight);
-
-    const bottomRimLight = new THREE.DirectionalLight(0xffffff, 1.3);
-    bottomRimLight.position.set(4, -5, -3);
-    scene.add(bottomRimLight);
-
-    const topRimLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    topRimLight.position.set(0, 6, -2);
-    scene.add(topRimLight);
-
-    const bottomTopRimLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    bottomTopRimLight.position.set(0, -6, -2);
-    scene.add(bottomTopRimLight);
-
     const fillLight = new THREE.DirectionalLight(0xffffff, 1.1);
     fillLight.position.set(-5, 6, 6);
     scene.add(fillLight);
@@ -379,6 +400,24 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     const bottomFillLight = new THREE.DirectionalLight(0xffffff, 1.1);
     bottomFillLight.position.set(5, -6, 6);
     scene.add(bottomFillLight);
+
+    if (!isMobile) {
+      const rimLight = new THREE.DirectionalLight(0xffffff, 1.3);
+      rimLight.position.set(-4, 5, -3);
+      scene.add(rimLight);
+
+      const bottomRimLight = new THREE.DirectionalLight(0xffffff, 1.3);
+      bottomRimLight.position.set(4, -5, -3);
+      scene.add(bottomRimLight);
+
+      const topRimLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      topRimLight.position.set(0, 6, -2);
+      scene.add(topRimLight);
+
+      const bottomTopRimLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      bottomTopRimLight.position.set(0, -6, -2);
+      scene.add(bottomTopRimLight);
+    }
 
     // ---- ROOT GROUP ----
     const rootGroup = new THREE.Group();
@@ -720,11 +759,15 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
                 // while preserving authentic black center circle, inner ear recess, and "02 HAULO" markings
                 mat.color.set('#FFFFFF');
                 if (mat.map) {
-                  const recoloredTex = recolorRingTextureToEarColor(mat.map);
+                  const origMap = mat.map;
+                  const recoloredTex = recolorRingTextureToEarColor(origMap);
                   mat.map = recoloredTex;
                   mat.map.colorSpace = THREE.SRGBColorSpace;
                   mat.map.needsUpdate = true;
                   mat.emissiveMap = recoloredTex;
+                  if (origMap !== recoloredTex) {
+                    origMap.dispose();
+                  }
                 }
                 mat.emissive.set('#B8FF00');
                 mat.emissiveIntensity = 0.22;
@@ -887,12 +930,19 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
         model.scale.setScalar(actionConfig.scale * initialMeshScaleMult);
         model.rotation.set(...actionConfig.rotation);
         rootGroup.add(model);
+        if (renderer && scene && camera) {
+          try {
+            renderer.compile(scene, camera);
+          } catch { }
+        }
+        loadingManager.setProgress(0.96, 'compiling');
         if (isHeroVisible && !isMountedInRing && rootGroup.parent === scene) {
           startHeroRenderLoop();
         }
       })
       .catch((err) => {
         console.error('[Frog3D] Error rendering frog model:', err);
+        loadingManager.setError(err);
       });
 
     // ---- RENDER LOOP & ANIMATION LIFECYCLE ----
@@ -1250,6 +1300,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     // Expose animation tick so the active mechanical ring can drive the frog directly
     rootGroup.tickFrogAnimation = tickFrogAnimation;
 
+    let hasNotifiedReady = false;
     startHeroRenderLoop = () => {
       if (animFrameId || !isMounted || !isHeroVisible || isMountedInRing || rootGroup.parent !== scene) return;
       lastTime = performance.now();
@@ -1268,6 +1319,11 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
         tickFrogAnimation(delta, now);
 
         renderer.render(scene, camera);
+
+        if (!hasNotifiedReady) {
+          hasNotifiedReady = true;
+          loadingManager.setReady();
+        }
       };
 
       animate();

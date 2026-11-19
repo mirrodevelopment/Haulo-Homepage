@@ -1,0 +1,230 @@
+/* HAULO Branded 3D Loading Screen Styles */
+
+.haulo-loading-screen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+  pointer-events: auto;
+  transition: background-color 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.haulo-loading-screen--transitioning {
+  background-color: rgba(255, 255, 255, 0) !important;
+  pointer-events: none;
+}
+
+.haulo-loading-screen--transitioning .haulo-loading-screen__logo-wrap {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.haulo-loading-screen__content {
+  width: 90%;
+  max-width: 1180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(48px, 9vh, 96px);
+  margin-top: -3vh;
+}
+
+/* HAULO Logo */
+.haulo-loading-screen__logo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.haulo-loading-screen__logo {
+  width: clamp(200px, 26vw, 340px);
+  height: auto;
+  object-fit: contain;
+  display: block;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+/* Main Loading Row: LOADING — PILL BAR — 100% */
+.haulo-loading-screen__row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(16px, 2.5vw, 36px);
+  transition: opacity 0.45s ease;
+}
+
+.haulo-loading-screen--transitioning .haulo-loading-screen__row,
+.haulo-loading-screen--transitioning .haulo-loading-screen__caption {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.haulo-loading-screen__label {
+  font-family: 'Anton', 'Bebas Neue', 'Oswald', sans-serif;
+  font-size: clamp(38px, 6.5vw, 76px);
+  line-height: 1;
+  font-weight: 900;
+  color: #000000;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Long Pill Progress Bar */
+.haulo-loading-screen__bar-track {
+  flex: 1;
+  min-width: 120px;
+  height: clamp(34px, 4.4vw, 52px);
+  border: 2px solid #000000;
+  border-radius: 9999px;
+  background-color: transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Solid Black Circular Indicator */
+.haulo-loading-screen__bar-circle {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: clamp(24px, 3.4vw, 40px);
+  height: clamp(24px, 3.4vw, 40px);
+  background-color: #000000;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* Percentage Display */
+.haulo-loading-screen__percent {
+  font-family: 'Anton', 'Bebas Neue', 'Oswald', sans-serif;
+  font-size: clamp(38px, 6.5vw, 76px);
+  line-height: 1;
+  font-weight: 900;
+  color: #000000;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  min-width: clamp(80px, 11vw, 150px);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Bottom Caption */
+.haulo-loading-screen__caption {
+  position: absolute;
+  bottom: clamp(24px, 4vh, 44px);
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-size: clamp(10px, 1.2vw, 12px);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+/* Error State */
+.haulo-loading-screen__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  max-width: 460px;
+  padding: 24px;
+}
+
+.haulo-loading-screen__error-title {
+  font-family: 'Anton', 'Bebas Neue', sans-serif;
+  font-size: clamp(28px, 4vw, 44px);
+  color: #000000;
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.haulo-loading-screen__error-desc {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: #555555;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.haulo-loading-screen__retry-btn {
+  margin-top: 12px;
+  padding: 12px 32px;
+  border: 2px solid #000000;
+  border-radius: 9999px;
+  background-color: transparent;
+  color: #000000;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.haulo-loading-screen__retry-btn:hover {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+/* Mobile Layout Adjustments (360px - 480px) */
+@media (max-width: 600px) {
+  .haulo-loading-screen__content {
+    gap: 36px;
+    width: 92%;
+  }
+
+  .haulo-loading-screen__row {
+    gap: 12px;
+  }
+
+  .haulo-loading-screen__label,
+  .haulo-loading-screen__percent {
+    font-size: clamp(28px, 7.5vw, 38px);
+  }
+
+  .haulo-loading-screen__percent {
+    min-width: 64px;
+  }
+
+  .haulo-loading-screen__bar-track {
+    height: 32px;
+    padding: 3px;
+    border-width: 1.5px;
+  }
+
+  .haulo-loading-screen__bar-circle {
+    width: 24px;
+    height: 24px;
+  }
+
+  .haulo-loading-screen__caption {
+    bottom: 20px;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    padding: 0 16px;
+  }
+}
