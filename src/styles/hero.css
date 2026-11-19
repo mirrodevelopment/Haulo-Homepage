@@ -201,6 +201,10 @@
 }
 
 @media (min-width: 769px) {
+  .hero-callout--tr.hero-callout--word-detail {
+    margin-top: 48px;
+  }
+
 
   .word-frog-haulo canvas,
   .word-frog-shared canvas {
@@ -526,10 +530,16 @@
 
   @media (max-width: 768px) {
     .hero-callout--tr {
-      top: max(calc(env(safe-area-inset-top, 0px) + 80px), calc(46dvh - 95px)) !important;
+      top: calc(33vh - 96px) !important;
+      top: calc(33dvh - 96px) !important;
       right: max(12px, calc(env(safe-area-inset-right, 0px) + 12px)) !important;
       transform: scale(0.82);
       transform-origin: top right;
+    }
+
+    .hero-callout--tr.hero-callout--editorial {
+      top: clamp(160px, 26vh, 210px) !important;
+      margin-top: calc(clamp(76px, 12vh, 120px) + 56px);
     }
 
     .hero-callout--bl {
@@ -560,10 +570,15 @@
 
   @media (max-width: 480px) {
     .hero-callout--tr {
-      top: max(calc(env(safe-area-inset-top, 0px) + 75px), calc(46dvh - 88px)) !important;
+      top: calc(33vh - 90px) !important;
+      top: calc(33dvh - 90px) !important;
       right: max(8px, calc(env(safe-area-inset-right, 0px) + 8px)) !important;
       transform: scale(0.74);
       transform-origin: top right;
+    }
+
+    .hero-callout--tr.hero-callout--editorial {
+      top: clamp(150px, 25vh, 195px) !important;
     }
 
     .hero-callout--bl {

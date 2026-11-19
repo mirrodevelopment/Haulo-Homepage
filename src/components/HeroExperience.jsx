@@ -1097,11 +1097,11 @@ export const HeroExperience = forwardRef(function HeroExperience(
           const pacedT = paceProgress(localProgress);
           const tf = evaluateTrack(pacedT, cachedDims[index].width, cachedDims[index].height);
 
-          // Word 0 (HAULO) and words 1-4: centered on the screen on mobile; on desktop sits slightly above for breathing room
+          // Word 0 (HAULO) and words 1-4: calibrated mobile elevation with balanced vertical spacing; desktop maintains calibrated editorial layout
           if (index === 0) {
-            tf.y += window.innerHeight * (geo.isMobile ? 0.170 : -0.015);
+            tf.y += window.innerHeight * (geo.isMobile ? 0.035 : -0.015);
           } else {
-            tf.y += window.innerHeight * (geo.isMobile ? 0.175 : 0.115);
+            tf.y += window.innerHeight * (geo.isMobile ? 0.035 : 0.115);
           }
 
           // Last word (AND EVOLVE): moves to DOWN SIDE with size decreasing equal to scroll
@@ -1359,7 +1359,6 @@ export const HeroExperience = forwardRef(function HeroExperience(
             const elapsed = ringSwimLastUpdate > 0
               ? Math.min(0.1, Math.max(0, (now - ringSwimLastUpdate) / 1000))
               : 1 / 60;
-            const isBetweenRings = sharedFrogRingRef.current < 0;
             // Keep the swimmer in step with the camera during ring handoffs.
             // The longer gap-only damping made the camera reach the next
             // opening before the frog did, so use the same responsive, smooth
@@ -1631,7 +1630,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
             // Continuous ring-to-ring handoff keeps the swimmer in full-screen 3D space with
             // hardware depth occlusion so it never overlaps the front fascia or gets letterboxed.
             const minT = i === 0 ? 0.02 : 0.10;
-            const maxT = i === SPACE_COUNT - 1 ? 0.85 : 0.90;
+            const maxT = i === 0 ? 0.92 : (i === SPACE_COUNT - 1 ? 0.85 : 0.90);
             if (localT < minT || localT > maxT) continue;
             const distanceFromAperture = Math.abs(localT - 0.50);
             const hysteresisBias = (sharedFrogRingRef.current === i) ? -0.05 : 0;
@@ -1696,16 +1695,32 @@ export const HeroExperience = forwardRef(function HeroExperience(
             ?.querySelector('.ring-3d-model-container');
           const activeLocalT = travel - RING_OFFSETS[focusedProjectRing];
           const lockDist = Math.abs(activeLocalT - 0.50);
-          const tLock = Math.max(0, Math.min(1, (0.18 - lockDist) / 0.15));
+          const enteringIntro = focusedProjectRing === 0 && globalProgress <= SPACE_FOCUS_START;
+          const tLock = enteringIntro
+            ? Math.max(0, Math.min(1, (activeLocalT - 0.02) / 0.48))
+            : Math.max(0, Math.min(1, (0.18 - lockDist) / 0.15));
           const lockWeight = tLock * tLock * (3 - 2 * tLock);
           const downFrontShiftY = (focusedProjectRing > 0 && spaceDirTurnTracker > 0.01)
             ? geo.vh * (geo.isMobile ? 0.018 : 0.055) * spaceDirTurnTracker
             : 0;
-          const targetScreenX = globalProgress <= SPACE_FOCUS_START ? currentFrogX + frogBodyOffset.x : apertureCenter.x;
-          const targetScreenY = (globalProgress <= SPACE_FOCUS_START ? currentFrogY + frogBodyOffset.y : apertureCenter.y) + downFrontShiftY;
+          // The hero canvas sits in the transformed scroll scene; the ring canvas is viewport-fixed.
+          const heroRect = enteringIntro ? frogEl?.getBoundingClientRect() : null;
+          const targetScreenX = heroRect
+            ? heroRect.left + heroRect.width * (0.5 + frogBodyOffset.x / (frogEl.clientWidth || geo.vw)) - geo.vw * 0.5
+            : apertureCenter.x;
+          const targetScreenY = heroRect
+            ? heroRect.top + heroRect.height * (0.5 + frogBodyOffset.y / (frogEl.clientHeight || geo.vh)) - geo.vh * 0.5
+            : apertureCenter.y + downFrontShiftY;
           const targetNdcX = (2 * targetScreenX) / (geo.vw || 1);
           const targetNdcY = -(2 * targetScreenY) / (geo.vh || 1);
-          container?.setSharedFrogScreenTarget?.(targetNdcX, targetNdcY, lockWeight);
+          // Aim for where the entrance will settle, so an offscreen ring cannot
+          // pull the swimmer up and then back down as it slides into view.
+          let approachOffsetNdcY = 0;
+          if (enteringIntro) {
+            const path = evaluateRingSpline(paceRingProgress(activeLocalT), geo);
+            approachOffsetNdcY = (2 * path.y / geo.vh) * (1180 / (1180 - path.z));
+          }
+          container?.setSharedFrogScreenTarget?.(targetNdcX, targetNdcY, lockWeight, approachOffsetNdcY);
           if (container?.mountSharedFrog?.(sharedFrogRoot, handoffScreenPosition)) {
             frogFacingRef.current?.setMountedInRing?.(true);
             if (previousRing !== -1 && previousRing !== focusedProjectRing) {
@@ -1739,6 +1754,10 @@ export const HeroExperience = forwardRef(function HeroExperience(
             }
           }
           frogFacingRef.current?.restoreSharedRoot?.();
+          if (sharedFrogRingRef.current === 0 && globalProgress <= SPACE_FOCUS_START) {
+            frogSet?.opacity(frogAlpha);
+            frogFacingRef.current?.renderNow?.();
+          }
           sharedFrogRingRef.current = -1;
         }
 
@@ -1861,6 +1880,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
 
           // Dynamically adjust callout position & leader line path to match current word & figure
           if (calloutTrRef.current && calloutData.trPos) {
+            calloutTrRef.current.classList.toggle('hero-callout--editorial', activeWordIdx === 5);
+            calloutTrRef.current.classList.toggle('hero-callout--word-detail', activeWordIdx >= 1 && activeWordIdx <= 4);
             calloutTrRef.current.style.top = calloutData.trPos.top;
             calloutTrRef.current.style.right = calloutData.trPos.right;
           }
@@ -2069,37 +2090,31 @@ export const HeroExperience = forwardRef(function HeroExperience(
       ];
       let isWordAnimating = false;
       let wordAnimSafetyTimer = null;
-      let activeTargetProgress = null;
 
       const finishWordAnimation = () => {
         if (wordAnimSafetyTimer) {
           clearTimeout(wordAnimSafetyTimer);
           wordAnimSafetyTimer = null;
         }
-        activeTargetProgress = null;
         setTimeout(() => {
           isWordAnimating = false;
-        }, 30);
+        }, 120);
       };
 
       const animateToScrollY = (targetY, duration, options = {}) => {
-        const { isTouch = false, targetProgress = null } = options;
+        const { isTouch = false } = options;
         isWordAnimating = true;
-        if (targetProgress !== null) {
-          activeTargetProgress = targetProgress;
-        }
         const jumpDuration = typeof duration === 'number' ? duration : (isTouch ? 0.85 : 1.20);
         if (wordAnimSafetyTimer) clearTimeout(wordAnimSafetyTimer);
         wordAnimSafetyTimer = setTimeout(() => {
           isWordAnimating = false;
-          activeTargetProgress = null;
           wordAnimSafetyTimer = null;
         }, (jumpDuration + 0.15) * 1000);
         if (window.lenis) {
           window.lenis.scrollTo(targetY, {
             duration: jumpDuration,
             easing: (t) => 1 - Math.pow(1 - t, 2.2),
-            lock: !isTouch,
+            lock: options.lock !== undefined ? options.lock : true,
             force: true,
             onComplete: finishWordAnimation
           });
@@ -2118,6 +2133,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
         }
       };
 
+      let lastWheelTriggerTime = 0;
+
       const handleWheel = (e) => {
         if (!heroActiveRef.current) return;
         const currentY = window.lenis ? window.lenis.scroll : window.scrollY;
@@ -2125,18 +2142,52 @@ export const HeroExperience = forwardRef(function HeroExperience(
         const totalDist = heroScrollTrigger.end - heroScrollTrigger.start;
         if (!totalDist || totalDist <= 0) return;
 
+        const currentProgress = Math.max(0, (currentY - startY) / totalDist);
+
+        // Mobile snap scroll for Section 1 (handles trackpad / wheel in mobile view or emulation)
+        if ((geo.isMobile || window.innerWidth <= 768) && currentProgress <= 0.40) {
+          e.preventDefault();
+          const now = performance.now();
+          if (isWordAnimating || Math.abs(e.deltaY) < 8 || (now - lastWheelTriggerTime < 380)) return;
+
+          lastWheelTriggerTime = now;
+          const S1_STEPS = [0.00, 0.09, 0.18, 0.27, 0.36];
+          let currentIdx = 0;
+          let minD = 999;
+          S1_STEPS.forEach((s, i) => {
+            const d = Math.abs(s - currentProgress);
+            if (d < minD) {
+              minD = d;
+              currentIdx = i;
+            }
+          });
+
+          if (e.deltaY > 0) {
+            scrollDirection = 1;
+            const nextStep = currentProgress >= 0.35 ? 0.46 : S1_STEPS[Math.min(4, currentIdx + 1)];
+            const targetY = startY + nextStep * totalDist;
+            animateToScrollY(targetY, 0.85, { isTouch: true, lock: true, targetProgress: nextStep });
+          } else if (e.deltaY < 0) {
+            scrollDirection = -1;
+            const prevStep = S1_STEPS[Math.max(0, currentIdx - 1)];
+            const targetY = startY + prevStep * totalDist;
+            animateToScrollY(targetY, 0.85, { isTouch: true, lock: true, targetProgress: prevStep });
+          }
+          return;
+        }
+
         // Snapping boundary: active through words, editorial hero, and all space mech rings
         const snapLimitY = startY + 1.05 * totalDist;
 
         if (currentY >= startY - 10 && currentY <= snapLimitY) {
           if (Math.abs(e.deltaY) < 6) return;
 
-          if (isWordAnimating) {
+          const now = performance.now();
+          if (isWordAnimating || (now - lastWheelTriggerTime < 380)) {
             e.preventDefault();
             return;
           }
-
-          const currentProgress = Math.max(0, (currentY - startY) / totalDist);
+          lastWheelTriggerTime = now;
 
           if (e.deltaY > 0) {
             // Scrolling DOWN: find next step
@@ -2164,12 +2215,16 @@ export const HeroExperience = forwardRef(function HeroExperience(
 
       let touchStartY = 0;
       let touchStartX = 0;
+      let touchHandled = false;
+      let didUserDrag = false;
       let lastTouchTriggerTime = 0;
 
       const handleTouchStart = (e) => {
         if (e.touches && e.touches[0]) {
           touchStartY = e.touches[0].clientY;
           touchStartX = e.touches[0].clientX;
+          touchHandled = false;
+          didUserDrag = false;
         }
       };
 
@@ -2179,6 +2234,72 @@ export const HeroExperience = forwardRef(function HeroExperience(
         const startY = heroScrollTrigger.start;
         const totalDist = heroScrollTrigger.end - heroScrollTrigger.start;
         if (!totalDist || totalDist <= 0) return;
+
+        const currentProgress = Math.max(0, (currentY - startY) / totalDist);
+
+        // Mobile snap scroll for Section 1 (0.00 to 0.36): intentional swipe triggers the jump to next/prev text area
+        if ((geo.isMobile || window.innerWidth <= 768) && currentProgress <= 0.40) {
+          // Prevent default continuous dragging in Section 1 on mobile
+          e.preventDefault();
+
+          if (isWordAnimating) {
+            return;
+          }
+
+          const deltaY = touchStartY - e.touches[0].clientY;
+          const deltaX = touchStartX - e.touches[0].clientX;
+
+          // Intentional swipe threshold (10px): cleanly filters out thumb resting/tap jitter while responding instantly to any swipe
+          if (Math.abs(deltaY) < 10 || Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+            return;
+          }
+
+          didUserDrag = true;
+
+          const now = performance.now();
+          if (now - lastTouchTriggerTime < 350) {
+            return;
+          }
+
+          if (!touchHandled) {
+            touchHandled = true;
+            lastTouchTriggerTime = now;
+
+            const S1_STEPS = [0.00, 0.09, 0.18, 0.27, 0.36];
+            let currentIdx = 0;
+            let minD = 999;
+            S1_STEPS.forEach((s, i) => {
+              const d = Math.abs(s - currentProgress);
+              if (d < minD) {
+                minD = d;
+                currentIdx = i;
+              }
+            });
+
+            if (deltaY > 0) {
+              // Swipe UP (scroll down) -> advance directly to next text area
+              scrollDirection = 1;
+              const nextStep = currentProgress >= 0.35 ? 0.46 : S1_STEPS[Math.min(4, currentIdx + 1)];
+              const targetY = startY + nextStep * totalDist;
+              animateToScrollY(targetY, 0.85, {
+                isTouch: true,
+                lock: true,
+                targetProgress: nextStep
+              });
+            } else if (deltaY < 0) {
+              // Swipe DOWN (scroll up) -> advance directly to previous text area
+              scrollDirection = -1;
+              const prevStep = S1_STEPS[Math.max(0, currentIdx - 1)];
+              const targetY = startY + prevStep * totalDist;
+              animateToScrollY(targetY, 0.85, {
+                isTouch: true,
+                lock: true,
+                targetProgress: prevStep
+              });
+            }
+          }
+          return;
+        }
 
         const snapLimitY = startY + 1.05 * totalDist;
         if (currentY >= startY - 10 && currentY <= snapLimitY) {
@@ -2190,52 +2311,49 @@ export const HeroExperience = forwardRef(function HeroExperience(
             return;
           }
 
-          const now = performance.now();
-          // Throttle consecutive step triggers (minimum 220ms apart) so one swipe does not skip multiple steps
-          if (now - lastTouchTriggerTime < 220) {
+          if (isWordAnimating) {
             e.preventDefault();
             return;
           }
 
-          const currentProgress = Math.max(0, (currentY - startY) / totalDist);
+          const now = performance.now();
+          // One touch gesture triggers at most one snap step; throttle at 350ms
+          if (touchHandled || now - lastTouchTriggerTime < 350) {
+            e.preventDefault();
+            return;
+          }
+
+          didUserDrag = true;
 
           if (deltaY > 0) {
             // Swipe UP -> advance forward (scroll DOWN)
             scrollDirection = 1;
-            const baseProgress = (isWordAnimating && activeTargetProgress !== null && activeTargetProgress >= currentProgress)
-              ? activeTargetProgress
-              : currentProgress;
-
-            const nextStep = SNAP_STEPS.find((s) => s > baseProgress + 0.012);
+            const nextStep = SNAP_STEPS.find((s) => s > currentProgress + 0.012);
             if (nextStep !== undefined) {
               e.preventDefault();
-              touchStartY = e.touches[0].clientY;
-              touchStartX = e.touches[0].clientX;
+              touchHandled = true;
               lastTouchTriggerTime = now;
               const targetY = startY + nextStep * totalDist;
               const isRingFlight = (currentProgress >= 0.40 && nextStep >= 0.55);
               animateToScrollY(targetY, isRingFlight ? 1.35 : 0.85, {
                 isTouch: true,
+                lock: true,
                 targetProgress: nextStep
               });
             }
           } else if (deltaY < 0) {
             // Swipe DOWN -> advance backward (scroll UP)
             scrollDirection = -1;
-            const baseProgress = (isWordAnimating && activeTargetProgress !== null && activeTargetProgress <= currentProgress)
-              ? activeTargetProgress
-              : currentProgress;
-
-            const prevStep = [...SNAP_STEPS].reverse().find((s) => s < baseProgress - 0.012);
+            const prevStep = [...SNAP_STEPS].reverse().find((s) => s < currentProgress - 0.012);
             if (prevStep !== undefined) {
               e.preventDefault();
-              touchStartY = e.touches[0].clientY;
-              touchStartX = e.touches[0].clientX;
+              touchHandled = true;
               lastTouchTriggerTime = now;
               const targetY = startY + prevStep * totalDist;
               const isRingFlight = (currentProgress >= 0.55 && prevStep >= 0.45);
               animateToScrollY(targetY, isRingFlight ? 1.35 : 0.85, {
                 isTouch: true,
+                lock: true,
                 targetProgress: prevStep
               });
             }
@@ -2244,8 +2362,42 @@ export const HeroExperience = forwardRef(function HeroExperience(
       };
 
       const handleTouchEnd = () => {
+        const wasDragged = didUserDrag;
         touchStartY = 0;
         touchStartX = 0;
+        touchHandled = false;
+        didUserDrag = false;
+
+        // ONLY snap on touch release if the user actually dragged their finger (never on a tap or resting touch)
+        // and only if the position is significantly off from a step (> 0.02, ~90px)
+        if (wasDragged && (geo.isMobile || window.innerWidth <= 768) && heroActiveRef.current && !isWordAnimating) {
+          const currentY = window.lenis ? window.lenis.scroll : window.scrollY;
+          const startY = heroScrollTrigger.start;
+          const totalDist = heroScrollTrigger.end - heroScrollTrigger.start;
+          if (totalDist > 0) {
+            const currentProgress = (currentY - startY) / totalDist;
+            if (currentProgress >= -0.02 && currentProgress <= 0.40) {
+              const S1_STEPS = [0.00, 0.09, 0.18, 0.27, 0.36];
+              let closestStep = S1_STEPS[0];
+              let minDiff = 999;
+              S1_STEPS.forEach((s) => {
+                const diff = Math.abs(s - currentProgress);
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestStep = s;
+                }
+              });
+              if (minDiff > 0.02) {
+                const targetY = startY + closestStep * totalDist;
+                animateToScrollY(targetY, 0.65, {
+                  isTouch: true,
+                  lock: true,
+                  targetProgress: closestStep
+                });
+              }
+            }
+          }
+        }
       };
 
       window.addEventListener('wheel', handleWheel, { passive: false });

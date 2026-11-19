@@ -45,17 +45,24 @@ export function LoadingScreen() {
         curProgressRef.current = target;
       }
 
-      const p = Math.min(100, Math.max(0, curProgressRef.current));
+      // Cap display progress at 99% until loadState.isReady is strictly true (never show 100% prematurely)
+      const maxAllowed = loadState.isReady ? 100 : 99;
+      const p = Math.min(maxAllowed, Math.max(0, curProgressRef.current));
       setDisplayProgress(p);
 
-      // Translate circle indicator within the pill track
+      // Translate circle indicator within the pill track when determinate
       if (trackRef.current && circleRef.current) {
-        const trackW = trackRef.current.clientWidth;
-        const circleW = circleRef.current.clientWidth;
-        // Account for 4px left/right inner track padding
-        const maxTravel = Math.max(0, trackW - circleW - 8);
-        const curX = (p / 100) * maxTravel;
-        circleRef.current.style.transform = `translate3d(${curX}px, -50%, 0)`;
+        if (!loadState.isIndeterminate) {
+          const trackW = trackRef.current.clientWidth;
+          const circleW = circleRef.current.clientWidth;
+          // Account for 4px left/right inner track padding
+          const maxTravel = Math.max(0, trackW - circleW - 8);
+          const curX = (p / 100) * maxTravel;
+          circleRef.current.style.transform = `translate3d(${curX}px, -50%, 0)`;
+        } else {
+          // Clear inline transform so CSS @keyframes haulo-bar-sweep runs freely
+          circleRef.current.style.transform = '';
+        }
       }
 
       // Check completion and trigger smooth logo fly-to-hero animation
@@ -162,7 +169,7 @@ export function LoadingScreen() {
         document.body.style.overflow = '';
       }
     };
-  }, [loadState.isReady, isMounted]);
+  }, [loadState.isReady, loadState.isIndeterminate, isMounted]);
 
   // Clean unmount once transition completes
   if (!isMounted) return null;
@@ -172,7 +179,7 @@ export function LoadingScreen() {
       className={`haulo-loading-screen ${isTransitioning ? 'haulo-loading-screen--transitioning' : ''}`}
       aria-label="Loading HAULO 3D Experience"
       role="progressbar"
-      aria-valuenow={Math.round(displayProgress)}
+      aria-valuenow={loadState.isIndeterminate ? undefined : Math.round(displayProgress)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
@@ -208,11 +215,16 @@ export function LoadingScreen() {
             <span className="haulo-loading-screen__label">LOADING</span>
 
             <div className="haulo-loading-screen__bar-track" ref={trackRef}>
-              <div className="haulo-loading-screen__bar-circle" ref={circleRef} />
+              <div
+                className={`haulo-loading-screen__bar-circle ${
+                  loadState.isIndeterminate ? 'haulo-loading-screen__bar-circle--indeterminate' : ''
+                }`}
+                ref={circleRef}
+              />
             </div>
 
             <span className="haulo-loading-screen__percent">
-              {Math.round(displayProgress)}%
+              {loadState.isIndeterminate ? '...' : `${Math.round(displayProgress)}%`}
             </span>
           </div>
         )}

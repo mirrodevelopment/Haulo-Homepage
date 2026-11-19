@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { perfDiagnostics } from '../services/perfDiagnostics';
+import { getTargetDPR, getAntialiasSetting } from '../utils/mobileRenderingConfig';
 
 // Synthesize satisfying high-tech mechanical button click audio
 function playMechanicalClickSound() {
@@ -110,13 +111,13 @@ function drawButtonTexture(ctx, width, height, text, isHovered, isPressed) {
     }
 
     if (isHovered) {
-      ctx.shadowColor = '#EAFF00';
+      ctx.shadowColor = '#C2FA36';
       ctx.shadowBlur = 24;
-      ctx.fillStyle = '#EAFF00';
+      ctx.fillStyle = '#C2FA36';
     } else if (isPressed) {
-      ctx.shadowColor = '#EAFF00';
+      ctx.shadowColor = '#C2FA36';
       ctx.shadowBlur = 12;
-      ctx.fillStyle = '#D4EE00';
+      ctx.fillStyle = '#A8F020';
     } else {
       ctx.shadowColor = 'rgba(255, 255, 255, 0.45)';
       ctx.shadowBlur = 8;
@@ -213,6 +214,45 @@ function createDescriptionCurvedMesh(lines, minX, maxX, srvTop, srvBottom, srv1H
 
   renderText();
 
+  const mesh = createPanelLettering(canvas, startX, descTop, descW, descH, 6.095, renderer);
+  if (document.fonts) {
+    document.fonts.ready.then(() => {
+      renderText();
+      mesh.material.map.needsUpdate = true;
+    });
+  }
+  return mesh;
+}
+
+function createMobilePanelCopy(content, left, divider, right, renderer) {
+  const width = right - left;
+  const height = 0.82;
+  const canvas = document.createElement('canvas');
+  canvas.height = 384;
+  const density = canvas.height / height;
+  canvas.width = Math.ceil(width * density);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Use the full height of the face and leave a gutter on both sides of the divider.
+  const gutter = 0.045 * density;
+  const split = (divider - left) * density;
+  const row = canvas.height / 5;
+  ctx.fillStyle = '#080808';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 ' + Math.round(row * 0.94) + 'px Arial, sans-serif';
+  const serviceWidth = split - gutter * 2;
+  content.services.forEach((line, i) => ctx.fillText(line, gutter, (i + 0.5) * row, serviceWidth));
+
+  const descWidth = canvas.width - split - gutter * 2;
+  // Leave the space below the paragraph free for the ring's slanted accent marks.
+  const pitch = (canvas.height - row * 0.72) / Math.max(4, content.description.length);
+  ctx.font = '600 ' + Math.round(pitch * 0.92) + 'px Arial, sans-serif';
+  content.description.forEach((line, i) => ctx.fillText(line, split + gutter, (i + 0.5) * pitch, descWidth));
+  return createPanelLettering(canvas, left, 1.44, width, height, 6.115, renderer);
+}
+
+function createPanelLettering(canvas, startX, descTop, descW, descH, radius, renderer) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const maxAniso = renderer ? renderer.capabilities.getMaxAnisotropy() : 16;
@@ -221,17 +261,9 @@ function createDescriptionCurvedMesh(lines, minX, maxX, srvTop, srvBottom, srv1H
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
 
-  if (document.fonts) {
-    document.fonts.ready.then(() => {
-      renderText();
-      texture.needsUpdate = true;
-    });
-  }
-
   const segmentsX = 24;
   const geo = new THREE.PlaneGeometry(descW, descH, segmentsX, 1);
   const pos = geo.attributes.position;
-  const R = 6.095;
 
   for (let i = 0; i < pos.count; i++) {
     const u = (pos.getX(i) + descW * 0.5) / descW;
@@ -239,7 +271,7 @@ function createDescriptionCurvedMesh(lines, minX, maxX, srvTop, srvBottom, srv1H
 
     const wx = startX + u * descW;
     const wy = (descTop - descH) + v * descH;
-    const wz = Math.sqrt(Math.max(0, R * R - wx * wx));
+    const wz = Math.sqrt(Math.max(0, radius * radius - wx * wx));
 
     pos.setXYZ(i, wx, wy, wz);
   }
@@ -284,23 +316,6 @@ function getSharedDracoLoader() {
   return sharedDracoLoader;
 }
 
-// Global shared RoomEnvironment texture across all Ring3DModel instances
-let sharedEnvTexture = null;
-function getSharedEnvironment(renderer) {
-  if (!sharedEnvTexture && renderer) {
-    try {
-      const pmremGenerator = new THREE.PMREMGenerator(renderer);
-      pmremGenerator.compileEquirectangularShader();
-      const roomEnv = new RoomEnvironment();
-      sharedEnvTexture = pmremGenerator.fromScene(roomEnv, 0.04).texture;
-      pmremGenerator.dispose();
-    } catch (e) {
-      console.warn('Failed to initialize shared RoomEnvironment:', e);
-    }
-  }
-  return sharedEnvTexture;
-}
-
 // Global shared PBR materials (eliminates 3,600 duplicate material instances per ring)
 const sharedBlackTextMaterial = new THREE.MeshBasicMaterial({
   color: new THREE.Color('#0A0A0A'),
@@ -320,7 +335,7 @@ const sharedHauloTextMaterial = new THREE.MeshBasicMaterial({
 });
 
 const sharedHauloLimeInlayMaterial = new THREE.MeshBasicMaterial({
-  color: new THREE.Color('#EEFF82'),
+  color: new THREE.Color('#C2FA36'),
   side: THREE.DoubleSide,
   depthTest: false,
   depthWrite: false,
@@ -336,7 +351,7 @@ const sharedWhiteDisplayTextMaterial = new THREE.MeshStandardMaterial({
 });
 
 const sharedLimeGlowMaterial = new THREE.MeshBasicMaterial({
-  color: new THREE.Color('#C4D464'),
+  color: new THREE.Color('#C2FA36'),
   toneMapped: false,
 });
 
@@ -347,6 +362,12 @@ const sharedCeramicArmorMaterial = new THREE.MeshPhysicalMaterial({
   clearcoat: 0.50,
   clearcoatRoughness: 0.10,
 });
+
+// The tilted intro panels face the key lights directly against a white backdrop.
+const introCeramicArmorMaterial = sharedCeramicArmorMaterial.clone();
+introCeramicArmorMaterial.color.set('#C8CBCF');
+introCeramicArmorMaterial.roughness = 0.38;
+introCeramicArmorMaterial.clearcoat = 0.18;
 
 const sharedGraphiteChassisMaterial = new THREE.MeshStandardMaterial({
   color: new THREE.Color('#4E5660'),
@@ -383,6 +404,11 @@ const sharedOliveHousingMaterial = new THREE.MeshStandardMaterial({
 export function preloadRingGLTF(url) {
   if (!url) return Promise.resolve(null);
   return loadRingGLTF(url);
+}
+
+export function usesMobileRingLoading() {
+  return window.innerWidth <= 900 || window.innerWidth < window.innerHeight ||
+    (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024);
 }
 
 function loadRingGLTF(url) {
@@ -621,6 +647,7 @@ function createHydraulicStrutsGroup() {
 }
 
 export function Ring3DModel({
+  enabled = true,
   glbUrl = '/Models/AWkN-Ring.glb',
   alt = 'HAULO Mech Ring 3D',
   className = '',
@@ -650,6 +677,7 @@ export function Ring3DModel({
   const isIntro = variant === 'intro';
 
   useEffect(() => {
+    if (!enabled) return;
     let isMounted = true;
     let animationFrameId = null;
     let renderer = null;
@@ -657,10 +685,14 @@ export function Ring3DModel({
     let camera = null;
     let ringPivot = null;
     let ringModelInstance = null;
+    let mobileCopy = null;
+    const desktopCopy = [];
+    const panelDividers = [];
     let sharedFrog = null;
     let sharedFrogMount = null;
     let sharedFrogHandoff = null;
     let sharedFrogScreenTarget = null;
+    let approachOffsetNdcY = 0;
     let sharedFrogLockWeight = 1;
     let expandedForSharedFrog = false;
     let expandedCanvasLayer = null;
@@ -738,18 +770,16 @@ export function Ring3DModel({
       renderer = new THREE.WebGLRenderer({
         canvas,
         alpha: true,
-        antialias: true,
+        antialias: getAntialiasSetting(),
         powerPreference: 'high-performance',
       });
-      const isMobile = window.innerWidth < 768;
-      const initialDPR = isMobile
-        ? Math.min(window.devicePixelRatio || 1, 1.5)
-        : Math.min(window.devicePixelRatio || 1, 2);
-      renderer.setPixelRatio(initialDPR);
+      renderer.setPixelRatio(getTargetDPR());
       renderer.setClearColor(0x000000, 0); // Transparent background
       renderer.toneMapping = THREE.LinearToneMapping;
       renderer.toneMappingExposure = 1.10;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
+      const ringId = 'ring-' + (glbUrl || '').split('/').pop();
+      perfDiagnostics.registerRenderer(ringId, renderer, ringId);
     } catch (e) {
       console.warn('WebGL init error on Ring3DModel:', e);
       return;
@@ -837,6 +867,10 @@ export function Ring3DModel({
       if (expandedForSharedFrog && renderer && camera && ringPivot) {
         const width = window.innerWidth;
         const height = window.innerHeight;
+        const targetDPR = getTargetDPR();
+        if (renderer.getPixelRatio() !== targetDPR) {
+          renderer.setPixelRatio(targetDPR);
+        }
         renderer.setSize(width, height, false);
         if (expandedCanvasLayer) {
           expandedCanvasLayer.style.width = `${width}px`;
@@ -851,7 +885,23 @@ export function Ring3DModel({
       }
     };
 
+    const updateProjectRingHeight = () => {
+      if (!isIntro && ringModelInstance) {
+        const mobile = window.innerWidth <= 900;
+        ringModelInstance.scale.y = mobile ? 1.18 : 1;
+        if (mobile && !mobileCopy && textContent && panelDividers.length === 2) {
+          mobileCopy = createMobilePanelCopy(textContent, panelDividers[0], panelDividers[1], 3.22, renderer);
+          if (mobileCopy) ringModelInstance.add(mobileCopy);
+        }
+        if (mobileCopy) {
+          mobileCopy.visible = mobile;
+          desktopCopy.forEach(mesh => { mesh.visible = !mobile; });
+        }
+      }
+    };
+
     const updateRendererSize = () => {
+      updateProjectRingHeight();
       if (!renderer || !container) return;
       if (expandedForSharedFrog) {
         resizeExpandedCanvas();
@@ -862,11 +912,7 @@ export function Ring3DModel({
       const displayW = Math.round(rect.width || container.clientWidth || baseW);
       if (displayW <= 0) return;
 
-      const isMobile = window.innerWidth < 768;
-      const targetDPR = isMobile
-        ? Math.min(window.devicePixelRatio || 1, 1.5)
-        : Math.min(window.devicePixelRatio || 1, 2);
-
+      const targetDPR = getTargetDPR();
       if (renderer.getPixelRatio() !== targetDPR) {
         renderer.setPixelRatio(targetDPR);
       }
@@ -888,13 +934,8 @@ export function Ring3DModel({
     window.addEventListener('resize', updateRendererSize);
     overlayResizeObserver.observe(container);
 
-    // ---- SCENE & SHARED ENVIRONMENT ----
+    // Match the swimmer's hero scene, which uses studio lights alone.
     scene = new THREE.Scene();
-    const envTex = getSharedEnvironment(renderer);
-    if (envTex) {
-      scene.environment = envTex;
-      scene.environmentIntensity = 0.85;
-    }
 
     // Aspect ratio and camera setup
     const aspect = baseW / baseH;
@@ -918,45 +959,46 @@ export function Ring3DModel({
     }
 
     // ---- BALANCED STUDIO LIGHTING (Desktop: 8 DirectionalLights; Mobile: 4 DirectionalLights + Ambient) ----
+    // Matched identically to Frog3DModel so shared frog preserves exact electric color and brightness across all sections
     const isMobile = window.innerWidth <= 900 || (window.innerWidth / (window.innerHeight || 1)) < 1.0;
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.65);
+    const ambientLight = new THREE.AmbientLight(0xffffff, isMobile ? 0.95 : 0.85);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
     keyLight.position.set(3, 7, 5);
     scene.add(keyLight);
 
-    const bottomKeyLight = new THREE.DirectionalLight(0xffffff, 1.65);
+    const bottomKeyLight = new THREE.DirectionalLight(0xffffff, 2.2);
     bottomKeyLight.position.set(-3, -7, 5);
     scene.add(bottomKeyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.1);
     fillLight.position.set(-5, 6, 6);
     scene.add(fillLight);
 
-    const bottomFillLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    const bottomFillLight = new THREE.DirectionalLight(0xffffff, 1.1);
     bottomFillLight.position.set(5, -6, 6);
     scene.add(bottomFillLight);
 
-    // Desktop auxiliary rim lights (rings on mobile already receive continuous 360-degree environment reflections via RoomEnvironment PMREM)
+    // Desktop auxiliary rim lights
     if (!isMobile) {
-      const rimLight = new THREE.DirectionalLight(0xffffff, 0.95);
+      const rimLight = new THREE.DirectionalLight(0xffffff, 1.3);
       rimLight.position.set(-4, 5, -3);
       scene.add(rimLight);
 
-      const bottomRimLight = new THREE.DirectionalLight(0xffffff, 0.95);
+      const bottomRimLight = new THREE.DirectionalLight(0xffffff, 1.3);
       bottomRimLight.position.set(4, -5, -3);
       scene.add(bottomRimLight);
 
-      const topRimLight = new THREE.DirectionalLight(0xffffff, 0.70);
+      const topRimLight = new THREE.DirectionalLight(0xffffff, 0.90);
       topRimLight.position.set(0, 6, -2);
       scene.add(topRimLight);
 
-      const bottomTopRimLight = new THREE.DirectionalLight(0xffffff, 0.70);
+      const bottomTopRimLight = new THREE.DirectionalLight(0xffffff, 0.90);
       bottomTopRimLight.position.set(0, -6, -2);
       scene.add(bottomTopRimLight);
     }
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, isMobile ? 0.70 : 0.65);
-    scene.add(ambientLight);
 
     // Pivot group for orientation and pointer parallax
     ringPivot = new THREE.Group();
@@ -1010,7 +1052,12 @@ export function Ring3DModel({
       let targetWorld = openingWorld;
       if (sharedFrogScreenTarget && sharedFrogLockWeight < 1 && camera) {
         camera.updateMatrixWorld(true);
-        const openingNdcZ = openingWorld.clone().project(camera).z;
+        const projectedOpening = openingWorld.clone().project(camera);
+        const openingNdcZ = projectedOpening.z;
+        if (approachOffsetNdcY) {
+          projectedOpening.y += approachOffsetNdcY;
+          openingWorld.copy(projectedOpening.unproject(camera));
+        }
         const screenWorld = new THREE.Vector3(
           sharedFrogScreenTarget.x,
           sharedFrogScreenTarget.y,
@@ -1041,7 +1088,8 @@ export function Ring3DModel({
       sharedFrogMount.updateWorldMatrix(true, true);
     };
 
-    container.setSharedFrogScreenTarget = (ndcX, ndcY, lockWeight = 1) => {
+    container.setSharedFrogScreenTarget = (ndcX, ndcY, lockWeight = 1, entryOffsetY = 0) => {
+      approachOffsetNdcY = entryOffsetY;
       if (Number.isFinite(ndcX) && Number.isFinite(ndcY)) {
         sharedFrogScreenTarget = { x: ndcX, y: ndcY };
       }
@@ -1199,17 +1247,6 @@ export function Ring3DModel({
         }
         sharedFrog = frogRoot;
         sharedFrogMount.add(frogRoot);
-        // Ensure frog materials maintain exact Section 2 electric colors without RoomEnvironment dulling
-        frogRoot.traverse((child) => {
-          if (child.isMesh && child.material) {
-            const mats = Array.isArray(child.material) ? child.material : [child.material];
-            mats.forEach((m) => {
-              if (m.envMapIntensity !== undefined) {
-                m.envMapIntensity = 0;
-              }
-            });
-          }
-        });
         sharedFrogHandoff = null;
         alignSharedFrogToOpening(frogRoot, 1);
         if (renderer && scene && camera) {
@@ -1271,15 +1308,8 @@ export function Ring3DModel({
       if (!frogRoot || !scene || !camera || !renderer) return;
       if (hasWarmedUpShaders) return;
       try {
-        if (sharedFrogMount) {
-          sharedFrogMount.add(frogRoot);
-        } else {
-          scene.add(frogRoot);
-        }
-        renderer.compile(scene, camera);
-        if (frogRoot.parent) {
-          frogRoot.parent.remove(frogRoot);
-        }
+        // Prepare the swimmer for this renderer while its current scene keeps drawing it.
+        renderer.compile(frogRoot, camera, scene);
         hasWarmedUpShaders = true;
       } catch (_) { }
     };
@@ -1541,6 +1571,14 @@ export function Ring3DModel({
                 (name.startsWith('project') && !name.includes('face') && !name.includes('panel')) ||
                 (name.startsWith('service') && !name.includes('face') && !name.includes('panel') && !name.includes('inscription'));
 
+              if (cleanName.startsWith('paneldivider')) {
+                child.geometry.computeBoundingBox();
+                panelDividers.push(child.geometry.boundingBox.max.x);
+              }
+              if (/^service[1-5]$/.test(cleanName)) {
+                desktopCopy.push(child);
+              }
+
               if (isRingTypography) {
                 child.visible = true;
                 child.renderOrder = 20;
@@ -1578,7 +1616,7 @@ export function Ring3DModel({
                   matName.includes('lettering panel')) &&
                 !name.includes('graphite')
               ) {
-                child.material = sharedCeramicArmorMaterial;
+                child.material = isIntro ? introCeramicArmorMaterial : sharedCeramicArmorMaterial;
                 return;
               }
 
@@ -1691,6 +1729,7 @@ export function Ring3DModel({
             );
             if (descriptionMesh) {
               model.add(descriptionMesh);
+              desktopCopy.push(descriptionMesh);
             }
           }
 
@@ -1837,7 +1876,9 @@ export function Ring3DModel({
               screenGeo.dispose();
             };
           }
+          panelDividers.sort((a, b) => a - b);
           ringModelInstance = model;
+          updateProjectRingHeight();
           ringPivot.add(model);
           setIsReady(true);
           if (renderer && scene && camera) {
@@ -1908,6 +1949,9 @@ export function Ring3DModel({
 
         if (renderer && scene && camera) {
           renderer.render(scene, camera);
+          const ringName = (glbUrl || '').split('/').pop() || 'Ring';
+          perfDiagnostics.recordRender(`ring-${ringName}`, renderer, `Ring (${ringName})`);
+          perfDiagnostics.recordFrame(0, 'Ring Section: ' + ringName);
           if (!container.hasLoggedCalls && renderer.info.render.calls > 0) {
             container.hasLoggedCalls = true;
             console.log(`[Three.js Telemetry] ${glbUrl.split('/').pop()} -> Actual Draw Calls: ${renderer.info.render.calls}, Triangles: ${renderer.info.render.triangles.toLocaleString()}`);
@@ -1934,6 +1978,7 @@ export function Ring3DModel({
 
     container.startRenderLoop = startRenderLoop;
     container.stopRenderLoop = stopRenderLoop;
+    if (parentRing && usesMobileRingLoading()) loadModel();
 
     // ---- INTERSECTION OBSERVER FOR LAZY LOADING & GPU PAUSING ----
     const intersectionObserver = new IntersectionObserver(
@@ -1957,12 +2002,16 @@ export function Ring3DModel({
 
     return () => {
       isMounted = false;
+      const ringId = 'ring-' + (glbUrl || '').split('/').pop();
+      perfDiagnostics.unregisterRenderer(ringId);
       stopRenderLoop();
       if (buttonCleanup) buttonCleanup();
+      mobileCopy?.userData.dispose();
       if (descriptionMesh && descriptionMesh.userData.dispose) descriptionMesh.userData.dispose();
       if (container.mountSharedFrog) delete container.mountSharedFrog;
       if (container.unmountSharedFrog) delete container.unmountSharedFrog;
       if (container.ensureModelLoaded) delete container.ensureModelLoaded;
+      delete container.warmupWithSharedFrog;
       if (container.startRenderLoop) delete container.startRenderLoop;
       if (container.stopRenderLoop) delete container.stopRenderLoop;
       // Also restore the React-owned canvas if this component unmounts mid-pass.
@@ -1975,7 +2024,7 @@ export function Ring3DModel({
         renderer.dispose();
       }
     };
-  }, [glbUrl, variant, enableAttachments, textContent, buttonText, projectUrl]);
+  }, [enabled, glbUrl, variant, enableAttachments, textContent, buttonText, projectUrl]);
 
   return (
     <div

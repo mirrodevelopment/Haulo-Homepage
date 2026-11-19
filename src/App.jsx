@@ -4,6 +4,7 @@ import { useLenis } from './hooks/useLenis';
 import { HeroExperience } from './components/HeroExperience';
 import { CustomCursor } from './components/CustomCursor';
 import { LoadingScreen } from './components/LoadingScreen';
+import { PerfDiagnosticsOverlay } from './components/PerfDiagnosticsOverlay';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -29,6 +30,7 @@ function AppContent() {
       <ScrollToTop />
       <CustomCursor />
       <LoadingScreen />
+      <PerfDiagnosticsOverlay />
 
       <div className="app-container">
         <Routes>

@@ -8,6 +8,7 @@ import { Ring3DModel } from './Ring3DModel';
  * Eliminates discrete page jumps and enables seamless continuous 3D scrolling.
  */
 export function NextSection({
+  preparedRings,
   stageRef,
   ringRefs,
   cylinderRefs,
@@ -51,6 +52,7 @@ export function NextSection({
                   <div className="space-intro-split">
                     <div className="space-intro-mech-box">
                       <Ring3DModel
+                        enabled={!preparedRings || preparedRings.has(index)}
                         glbUrl={item.glb}
                         alt="HAULO Space Mech Ring"
                         className="space-intro-mech-img"
@@ -77,6 +79,7 @@ export function NextSection({
                   <div className={`space-ring-showcase-box space-ring-showcase-box--${item.id}`}>
                       <div className="space-ring-media-wrapper">
                         <Ring3DModel
+                          enabled={!preparedRings || preparedRings.has(index)}
                           glbUrl={item.glb}
                           alt={`HAULO Space Project ${item.num} - ${item.title}`}
                           className="space-ring-showcase-img"

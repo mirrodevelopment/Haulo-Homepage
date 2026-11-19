@@ -113,6 +113,22 @@
   pointer-events: none;
 }
 
+/* Indeterminate smooth back-and-forth sweep when preparation progress cannot be measured */
+.haulo-loading-screen__bar-circle--indeterminate {
+  animation: haulo-bar-sweep 1.25s ease-in-out infinite alternate !important;
+}
+
+@keyframes haulo-bar-sweep {
+  0% {
+    left: 4px;
+    transform: translate3d(0, -50%, 0);
+  }
+  100% {
+    left: calc(100% - 4px);
+    transform: translate3d(-100%, -50%, 0);
+  }
+}
+
 /* Percentage Display */
 .haulo-loading-screen__percent {
   font-family: 'Anton', 'Bebas Neue', 'Oswald', sans-serif;

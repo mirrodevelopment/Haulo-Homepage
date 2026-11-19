@@ -5,15 +5,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { loadingManager } from '../services/loadingManager';
+import { perfDiagnostics } from '../services/perfDiagnostics';
+import { getTargetDPR, getAntialiasSetting, isMobileDevice } from '../utils/mobileRenderingConfig';
 function getFrogModelUrl() {
-  if (typeof window !== 'undefined') {
-    const isMobileDevice =
-      window.innerWidth <= 900 ||
-      (window.innerWidth / (window.innerHeight || 1)) < 1.0 ||
-      (('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 1024);
-    if (isMobileDevice) {
-      return `${import.meta.env.BASE_URL}FROG_3D_mobile.glb`;
-    }
+  if (typeof window !== 'undefined' && isMobileDevice()) {
+    return `${import.meta.env.BASE_URL}FROG_3D_mobile.glb`;
   }
   return `${import.meta.env.BASE_URL}FROG_3D.glb`;
 }
@@ -25,7 +21,9 @@ dracoLoader.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
 
 function loadFrogGLTF() {
   if (cachedGLTF) {
-    loadingManager.setReady();
+    // Model already in memory: advance progress but DO NOT set ready here.
+    // Readiness is strictly declared after the first complete Hero frame has actually rendered.
+    loadingManager.setProgress(0.92, 'compiling', false);
     return Promise.resolve(cachedGLTF);
   }
   if (gltfLoadingPromise) return gltfLoadingPromise;
@@ -33,40 +31,64 @@ function loadFrogGLTF() {
   const url = getFrogModelUrl();
   const loader = new GLTFLoader();
   loader.setDRACOLoader(dracoLoader);
-  gltfLoadingPromise = new Promise((resolve, reject) => {
-    loader.load(
-      url,
-      (gltf) => {
-        loadingManager.setProgress(0.88, 'parsing');
-        cachedGLTF = gltf;
-        gltfLoadingPromise = null;
-        resolve(gltf);
-      },
-      (event) => {
-        if (event.lengthComputable && event.total > 0) {
-          const frac = event.loaded / event.total;
-          loadingManager.setProgress(frac * 0.85, 'downloading');
-        } else if (event.loaded > 0) {
-          const estTotal = 12 * 1024 * 1024;
-          const frac = Math.min(0.99, event.loaded / estTotal);
-          loadingManager.setProgress(frac * 0.85, 'downloading');
-        }
-      },
-      (err) => {
-        gltfLoadingPromise = null;
-        loadingManager.setError(err);
-        reject(err);
+
+  perfDiagnostics.markLoadingStage('download_start', { url });
+
+  gltfLoadingPromise = (async () => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} loading 3D frog model`);
       }
-    );
-  });
+
+      const contentLength = response.headers.get('content-length');
+      const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+
+      let arrayBuffer;
+      if (totalBytes > 0 && response.body) {
+        const reader = response.body.getReader();
+        const chunks = [];
+        let receivedBytes = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          receivedBytes += value.length;
+          loadingManager.setProgress((receivedBytes / totalBytes) * 0.85, 'downloading', false);
+        }
+        const combined = new Uint8Array(receivedBytes);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        }
+        arrayBuffer = combined.buffer;
+      } else {
+        loadingManager.setIndeterminate('downloading');
+        arrayBuffer = await response.arrayBuffer();
+      }
+
+      perfDiagnostics.markLoadingStage('download_end');
+      perfDiagnostics.markLoadingStage('parse_start');
+      loadingManager.setProgress(0.88, 'parsing', false);
+
+      const gltf = await new Promise((resolve, reject) => {
+        loader.parse(arrayBuffer, '', resolve, reject);
+      });
+
+      perfDiagnostics.markLoadingStage('parse_end');
+      cachedGLTF = gltf;
+      gltfLoadingPromise = null;
+      return gltf;
+    } catch (err) {
+      gltfLoadingPromise = null;
+      loadingManager.setError(err);
+      throw err;
+    }
+  })();
+
   return gltfLoadingPromise;
 }
-
-loadingManager.registerRetryHandler(() => {
-  cachedGLTF = null;
-  gltfLoadingPromise = null;
-  loadFrogGLTF();
-});
 
 const recoloredRingTextureCache = new Map();
 
@@ -90,7 +112,7 @@ function recolorRingTextureToEarColor(sourceTexture) {
     const imgData = ctx.getImageData(0, 0, width, height);
     const data = imgData.data;
 
-    // Recolor green ring and ear shell pixels to exact face neon yellow #EAFF00,
+    // Recolor green ring and ear shell pixels to exact lighter neon green #C2FA36,
     // while preserving the black center circle, black recess, and black markings
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
@@ -105,14 +127,14 @@ function recolorRingTextureToEarColor(sourceTexture) {
         continue;
       }
 
-      // Convert green shell/ring pixels to face neon yellow #EAFF00 (r: 234, g: 255, b: 0)
+      // Convert green shell/ring pixels to lighter neon green #C2FA36 (r: 194, g: 250, b: 54)
       if (g > 35 && g > b * 1.15) {
-        // Full face electric neon yellow (#EAFF00 = 234, 255, 0)
+        // Lighter electric neon green (#C2FA36 = 194, 250, 54)
         // With smooth anti-aliased blend at boundary edges
         const alpha = Math.min(1.0, Math.max(0.0, (g - 35) / 65));
-        data[i] = Math.round(234 * alpha);     // R: 234
-        data[i + 1] = Math.round(255 * alpha); // G: 255
-        data[i + 2] = 0;                       // B: 0
+        data[i] = Math.round(194 * alpha);     // R: 194
+        data[i + 1] = Math.round(250 * alpha); // G: 250
+        data[i + 2] = Math.round(54 * alpha);  // B: 54
       }
     }
 
@@ -336,10 +358,11 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     const renderer = new THREE.WebGLRenderer({
       canvas,
       alpha: true,
-      antialias: true,
+      antialias: getAntialiasSetting(),
       powerPreference: 'high-performance',
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(getTargetDPR());
+    perfDiagnostics.registerRenderer('frog-hero', renderer, 'Hero Frog');
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.LinearToneMapping;
@@ -350,6 +373,8 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
 
     let modelInstance = null;
     let mixer = null;
+    let clipAction = null;
+    let entryPoseAction = null;
     let animClipDuration = 0;
     let bodyBone = null;
     let rootBone = null;
@@ -361,6 +386,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
 
     let isHeroVisible = true;
     let isMountedInRing = false;
+    let hasNotifiedReady = false;
     let startHeroRenderLoop = () => {};
     let stopHeroRenderLoop = () => {};
 
@@ -472,7 +498,6 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     let spaceModelScale = 1.0;
     let spaceDirTurn = 0;
     let currentSpaceDirTurn = 0;
-    let spaceScrollDir = 1;
     let ambientSwimProgress = 0;
     let swimActivity = 0;
     let lastSpaceScrollPhase = 1.0;
@@ -493,9 +518,6 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
         }
         if (typeof dirTurn === 'number') {
           spaceDirTurn = Math.max(0, Math.min(1, dirTurn));
-        }
-        if (typeof scrollDir === 'number') {
-          spaceScrollDir = scrollDir;
         }
         if (typeof spaceOffsetY === 'number') {
           targetSpaceOffsetY = spaceOffsetY;
@@ -532,6 +554,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
       };
       facingRef.current.renderNow = () => {
         renderer.render(scene, camera);
+        perfDiagnostics.recordRender('frog-hero', renderer, 'Hero Frog');
       };
 
       // Immediately apply initial orientation and lock controls
@@ -570,11 +593,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
       const aspect = w / h;
       camera.aspect = aspect;
 
-      const isMobile = window.innerWidth < 768;
-      const targetDPR = isMobile
-        ? Math.min(window.devicePixelRatio || 1, 1.5)
-        : Math.min(window.devicePixelRatio || 1, 2);
-
+      const targetDPR = getTargetDPR();
       if (renderer.getPixelRatio() !== targetDPR) {
         renderer.setPixelRatio(targetDPR);
       }
@@ -601,18 +620,29 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     ro.observe(container);
 
     // ---- LOAD MODEL & EMBEDDED ANIMATION ACTION ----
-    loadFrogGLTF()
-      .then((gltf) => {
-        if (!isMounted) return;
+    const initFrogExperience = () => {
+      hasNotifiedReady = false;
+      loadFrogGLTF()
+        .then((gltf) => {
+          if (!isMounted) return;
 
-        // Use SkeletonUtils to clone skinned meshes with full skeletal rebinding
-        const model = SkeletonUtils.clone(gltf.scene);
-        const materialInstances = new Map();
+          // Clear any prior children if retrying
+          while (rootGroup.children.length > 0) {
+            rootGroup.remove(rootGroup.children[0]);
+          }
 
-        // Eye orb material to unify the eye sphere in solid glowing neon green (#EAFF00)
+          // Use SkeletonUtils to clone skinned meshes with full skeletal rebinding
+          perfDiagnostics.markLoadingStage('clone_start');
+          const model = SkeletonUtils.clone(gltf.scene);
+          perfDiagnostics.markLoadingStage('clone_end');
+
+          perfDiagnostics.markLoadingStage('recolor_start');
+          const materialInstances = new Map();
+
+        // Eye orb material to unify the eye sphere in solid glowing neon green (#C2FA36)
         const eyeOrbCoreMaterial = new THREE.MeshStandardMaterial({
-          color: new THREE.Color('#EAFF00'),
-          emissive: new THREE.Color('#B8FF00'),
+          color: new THREE.Color('#C2FA36'),
+          emissive: new THREE.Color('#7EE80A'),
           emissiveIntensity: 0.22,
           roughness: 0.14,
           metalness: 0.02,
@@ -687,9 +717,9 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
             if (isEyeOrbCore) {
               const applySolidGreenEyeMaterial = (sourceMat) => {
                 const mat = sourceMat ? sourceMat.clone() : new THREE.MeshStandardMaterial();
-                mat.color.set('#EAFF00');
+                mat.color.set('#C2FA36');
                 mat.map = null;
-                mat.emissive.set('#B8FF00');
+                mat.emissive.set('#7EE80A');
                 mat.emissiveIntensity = 0.22;
                 mat.roughness = 0.14;
                 mat.metalness = 0.02;
@@ -755,7 +785,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
                 isTexturedGreenShell;
 
               if (isTexturedGreenShell) {
-                // Joint rings, toe nail pads, and ears: match exact face neon yellow (#EAFF00)
+                // Joint rings, toe nail pads, and ears: match exact face lighter neon green (#C2FA36)
                 // while preserving authentic black center circle, inner ear recess, and "02 HAULO" markings
                 mat.color.set('#FFFFFF');
                 if (mat.map) {
@@ -769,7 +799,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
                     origMap.dispose();
                   }
                 }
-                mat.emissive.set('#B8FF00');
+                mat.emissive.set('#7EE80A');
                 mat.emissiveIntensity = 0.22;
                 mat.roughness = 0.14;
                 mat.metalness = 0.02;
@@ -781,9 +811,9 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
                       '#include <map_fragment>',
                       `
                       #include <map_fragment>
-                      // Remap any green/yellow shell texels to exact face color (#EAFF00)
+                      // Remap any green/yellow shell texels to exact face lighter neon green (#C2FA36)
                       if (diffuseColor.g > 0.08 && diffuseColor.g > diffuseColor.b * 1.15 && diffuseColor.g >= diffuseColor.r * 0.85) {
-                        diffuseColor.rgb = vec3(0.8228, 1.0, 0.0);
+                        diffuseColor.rgb = vec3(0.5404, 0.9560, 0.0380);
                       }
                       `
                     )
@@ -799,13 +829,13 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
                       `
                     );
                 };
-                mat.customProgramCacheKey = () => 'frog_textured_face_yellow_exact_v3';
+                mat.customProgramCacheKey = () => 'frog_textured_face_neongreen_v1';
               } else if (isGreenSurface) {
-                // High-chroma electric lemon-neon matching reference images
+                // High-chroma electric lighter neon green matching reference images (#C2FA36)
                 const isEyeOrAccent = materialName === 'eye' || materialName.includes('neon');
-                mat.color.set('#EAFF00');
+                mat.color.set('#C2FA36');
                 mat.map = null;
-                mat.emissive.set(isEyeOrAccent ? '#D8FF00' : '#B8FF00');
+                mat.emissive.set(isEyeOrAccent ? '#A4FC18' : '#7EE80A');
                 mat.emissiveIntensity = isEyeOrAccent ? 0.48 : 0.22;
                 mat.roughness = 0.14;
                 mat.metalness = 0.02;
@@ -897,7 +927,10 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
           mixer = new THREE.AnimationMixer(model);
           const clip = gltf.animations[0];
           animClipDuration = clip.duration || 0;
-          const clipAction = mixer.clipAction(clip);
+          clipAction = mixer.clipAction(clip);
+          // A second sample of the same tracks blends the floor pose into the swim stroke.
+          const entryClip = new THREE.AnimationClip('Ring entry pose', clip.duration, clip.tracks);
+          entryPoseAction = mixer.clipAction(entryClip);
           clipAction.setLoop(THREE.LoopOnce, 1);
           clipAction.clampWhenFinished = true;
           clipAction.play();
@@ -930,12 +963,15 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
         model.scale.setScalar(actionConfig.scale * initialMeshScaleMult);
         model.rotation.set(...actionConfig.rotation);
         rootGroup.add(model);
+        perfDiagnostics.markLoadingStage('recolor_end');
+        perfDiagnostics.markLoadingStage('compile_start');
         if (renderer && scene && camera) {
           try {
             renderer.compile(scene, camera);
           } catch { }
         }
-        loadingManager.setProgress(0.96, 'compiling');
+        perfDiagnostics.markLoadingStage('compile_end');
+        loadingManager.setProgress(0.96, 'compiling', false);
         if (isHeroVisible && !isMountedInRing && rootGroup.parent === scene) {
           startHeroRenderLoop();
         }
@@ -944,6 +980,15 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
         console.error('[Frog3D] Error rendering frog model:', err);
         loadingManager.setError(err);
       });
+    };
+
+    loadingManager.registerRetryHandler(() => {
+      cachedGLTF = null;
+      gltfLoadingPromise = null;
+      initFrogExperience();
+    });
+
+    initFrogExperience();
 
     // ---- RENDER LOOP & ANIMATION LIFECYCLE ----
     let lastTime = performance.now();
@@ -969,108 +1014,49 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
           jumpProgress = targetJumpFrac;
         }
 
+        const inRingEntry = isSpaceFloat && targetSpaceScrollPhase <= 1;
+        if (!inRingEntry && entryPoseAction.isRunning()) {
+          entryPoseAction.stop();
+          clipAction.setEffectiveWeight(1);
+        }
+
         if (isSpaceFloat) {
-          // Direct scroll coupling during flight (0.0 -> 1.0) and in ring sections
-          if (targetSpaceScrollPhase <= 1.0) {
-            spaceFloatT = Math.max(0, Math.min(1, targetSpaceScrollPhase));
+          const p = THREE.MathUtils.clamp(targetSpaceScrollPhase, 0, 1);
+          spaceFloatT = p * p * (3 - 2 * p);
+          const scrollDelta = Math.abs(targetSpaceScrollPhase - lastSpaceScrollPhase);
+          lastSpaceScrollPhase = targetSpaceScrollPhase;
+          if (scrollDelta > 0.00008) {
+            swimActivity += (1 - swimActivity) * Math.min(1, delta * 6);
           } else {
-            spaceFloatT = 1.0;
+            swimActivity *= Math.exp(-delta / 0.45);
+          }
+          ambientSwimProgress += delta * (0.38 + 0.16 * swimActivity) * spaceFloatT;
+          const strokeCycle = ambientSwimProgress % 1;
+          const swimTime = animClipDuration >= 13.80
+            ? 11.80 + strokeCycle * 2
+            : 1.60 + strokeCycle * 0.8;
+
+          if (inRingEntry) {
+            // Both directions sample the same blend, including a reversal halfway through.
+            const pulse = (Math.sin(elapsed * 2.2) + 0.25 * Math.sin(elapsed * 4.4) + 1.25) / 2.5;
+            entryPoseAction.play().setEffectiveWeight(1 - spaceFloatT);
+            entryPoseAction.time = THREE.MathUtils.lerp(0.35 + 0.5 * pulse, 1.50, spaceFloatT);
+            clipAction.setEffectiveWeight(spaceFloatT);
+            clipAction.time = swimTime;
+            mixer.update(0);
+          } else {
+            mixer.setTime(swimTime);
           }
 
-          // Authentic Swimming Action (adapts smoothly to animation clip duration)
-          const hasDedicatedSwim = animClipDuration >= 13.80;
-          let swimAnimTime;
-          if (targetSpaceScrollPhase <= 1.0) {
-            // Flight between Editorial Hero floor and Ring 0 entrance
-            const p = Math.max(0, Math.min(1, targetSpaceScrollPhase));
-            if (spaceScrollDir === -1) {
-              // Backward: descending from swimming glide back onto floor
-              if (p > 0.04) {
-                wasJumping = true;
-              }
-              if (hasDedicatedSwim) {
-                if (p > 0.35) {
-                  // Swimming glide returning towards floor
-                  swimAnimTime = 13.80 - ((1.0 - p) / 0.65) * (13.80 - 11.80);
-                } else if (p > 0.10) {
-                  // Airborne descent towards touchdown (2.04s -> 2.79s)
-                  const t = (0.35 - p) / (0.35 - 0.10);
-                  swimAnimTime = 2.04 + t * (2.79 - 2.04);
-                } else {
-                  // Feet contact floor cushion & settle into landed rest pose (2.79s -> 3.70s)
-                  const u = (0.10 - p) / 0.10;
-                  swimAnimTime = 2.79 + u * (3.70 - 2.79);
-                }
-              } else {
-                if (p > 0.35) {
-                  swimAnimTime = 2.04 - ((1.0 - p) / 0.65) * (2.04 - 1.50);
-                } else if (p > 0.10) {
-                  const t = (0.35 - p) / (0.35 - 0.10);
-                  swimAnimTime = 2.04 + t * (2.79 - 2.04);
-                } else {
-                  const u = (0.10 - p) / 0.10;
-                  swimAnimTime = 2.79 + u * (3.70 - 2.79);
-                }
-              }
-            } else {
-              // Forward: push-off -> continuous streamlined swimming kick into ring
-              if (hasDedicatedSwim) {
-                if (p < 0.20) {
-                  swimAnimTime = 1.00 + (p / 0.20) * (1.50 - 1.00); // Push-off from floor
-                } else {
-                  // Continuous unbroken swimming kick gliding into the ring aperture
-                  swimAnimTime = 11.80 + ((p - 0.20) / 0.80) * (13.80 - 11.80);
-                }
-              } else {
-                if (p < 0.35) {
-                  swimAnimTime = 1.00 + (p / 0.35) * (1.60 - 1.00);
-                } else {
-                  swimAnimTime = 1.60 + ((p - 0.35) / 0.65) * (2.04 - 1.60);
-                }
-              }
-            }
-          } else {
-            // Inside the ring section: legs swim constantly both while moving
-            // between rings and while staying inside a ring.
-            const scrollDelta = Math.abs(targetSpaceScrollPhase - lastSpaceScrollPhase);
-            lastSpaceScrollPhase = targetSpaceScrollPhase;
-            const isMovingBetweenRings = scrollDelta > 0.00008;
-
-            if (isMovingBetweenRings) {
-              swimActivity += (1.0 - swimActivity) * Math.min(1, delta * 6.0);
-            } else {
-              swimActivity *= Math.exp(-delta / 0.45);
-            }
-
-            // Constant unbroken swimming: baseline steady swim rate (~0.38) while staying inside the ring,
-            // accelerating smoothly up to active swim rate (~0.54) while moving between rings.
-            const currentSwimRate = 0.38 + 0.16 * swimActivity;
-            ambientSwimProgress += delta * currentSwimRate;
-            const strokeCycle = ((ambientSwimProgress % 1.0) + 1.0) % 1.0;
-
-            if (hasDedicatedSwim) {
-              swimAnimTime = 11.80 + strokeCycle * 2.00;
-            } else {
-              swimAnimTime = 1.60 + strokeCycle * (2.40 - 1.60);
-            }
-
-            // Dynamic zero-g swimming pitch and roll banking (smooth on both mobile and desktop)
-            const kickSin = Math.sin(strokeCycle * Math.PI * 2);
-            const swimPitch = -0.06 * kickSin; // Slight streamline dip on kick thrust
-            const swimRoll = (spaceDirTurn - 0.5) * 0.12;
-
-            modelInstance.rotation.x = actionConfig.rotation[0] + swimPitch;
-            modelInstance.rotation.z = actionConfig.rotation[2] + swimRoll;
-          }
-
-          mixer.setTime(swimAnimTime);
+          modelInstance.rotation.x = actionConfig.rotation[0] - 0.06 * Math.sin(strokeCycle * Math.PI * 2) * spaceFloatT;
+          modelInstance.rotation.z = actionConfig.rotation[2] + (spaceDirTurn - 0.5) * 0.12 * spaceFloatT;
 
           // Neutralize root motion drift so the frog swims in-place at the center of the ring volume
           if (bodyBone && rootBone) {
             const forwardOffset = bodyBone.position.x - (-0.060);
             rootBone.position.x = -forwardOffset;
             const verticalOffset = bodyBone.position.z - 0.370;
-            rootBone.position.z = -verticalOffset;
+            rootBone.position.z = THREE.MathUtils.lerp(rootBone.position.z, -verticalOffset, spaceFloatT);
           }
 
           // In zero-g space ring sections, smoothly position the frog
@@ -1290,8 +1276,11 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
 
       rootGroup.updateMatrixWorld(true);
 
-      if (bodyBone && modelInstance && rootGroup.parent === scene) {
-        bodyBone.getWorldPosition(bodyWorldPosition).project(camera);
+      if (bodyBone && modelInstance && (rootGroup.parent === scene || (isSpaceFloat && targetSpaceScrollPhase <= 1))) {
+        bodyBone.getWorldPosition(bodyWorldPosition);
+        // Keep the hero-camera projection current even while the intro ring hosts the swimmer.
+        if (rootGroup.parent !== scene) rootGroup.parent.worldToLocal(bodyWorldPosition);
+        bodyWorldPosition.project(camera);
         bodyScreenOffset.x = bodyWorldPosition.x * (container.clientWidth || width) * 0.5;
         bodyScreenOffset.y = -bodyWorldPosition.y * (container.clientHeight || height) * 0.5;
       }
@@ -1300,7 +1289,6 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     // Expose animation tick so the active mechanical ring can drive the frog directly
     rootGroup.tickFrogAnimation = tickFrogAnimation;
 
-    let hasNotifiedReady = false;
     startHeroRenderLoop = () => {
       if (animFrameId || !isMounted || !isHeroVisible || isMountedInRing || rootGroup.parent !== scene) return;
       lastTime = performance.now();
@@ -1316,14 +1304,20 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
         const delta = Math.min((now - lastTime) / 1000, 0.1);
         lastTime = now;
 
+        const tAnim0 = performance.now();
         tickFrogAnimation(delta, now);
+        const animMs = performance.now() - tAnim0;
 
         renderer.render(scene, camera);
+        perfDiagnostics.recordRender('frog-hero', renderer, 'Hero Frog');
 
         if (!hasNotifiedReady) {
           hasNotifiedReady = true;
+          perfDiagnostics.markLoadingStage('first_frame');
           loadingManager.setReady();
         }
+
+        perfDiagnostics.recordFrame(animMs, `Hero (Area ${currentPRel.toFixed(1)})`);
       };
 
       animate();
@@ -1360,6 +1354,8 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     // ---- CLEANUP ----
     return () => {
       isMounted = false;
+      perfDiagnostics.unregisterRenderer('frog-hero');
+      loadingManager.registerRetryHandler(null);
       stopHeroRenderLoop();
       if (intersectionObserver) {
         intersectionObserver.disconnect();
