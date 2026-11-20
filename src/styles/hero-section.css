@@ -95,7 +95,7 @@
 .haulo-hero__copy {
   position: absolute;
   left: clamp(32px, 5.5vw, 100px);
-  top: 48%;
+  top: 32%;
   transform: translateY(-50%);
   z-index: 5;
   max-width: 65vw;
@@ -120,6 +120,12 @@
 .haulo-hero__line {
   display: block;
   white-space: nowrap;
+}
+
+@media (min-width: 769px) {
+  .haulo-hero__gap ~ .haulo-hero__line {
+    font-size: min(1.2em, 7vw, 11vh);
+  }
 }
 
 .haulo-hero__gap {
@@ -727,6 +733,11 @@
     align-items: center;
   }
 
+  .haulo-hero__gap ~ .haulo-hero__line {
+    font-size: 1.704em;
+    -webkit-text-stroke: 0.012em currentColor;
+  }
+
   .haulo-hero__gap {
     height: 0.22em;
   }
@@ -793,7 +804,7 @@
 }
 
 @media (max-height: 620px) and (min-width: 769px) {
-  .haulo-hero__copy { top: 44%; }
+  .haulo-hero__copy { top: 33%; }
   .haulo-hero__headline { font-size: clamp(32px, 4.4vw, 64px); }
   .haulo-hero__frog-img { height: min(50vh, 36vw); max-height: 420px; }
   .haulo-hero__sysinfo { top: 12%; }

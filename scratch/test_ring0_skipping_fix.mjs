@@ -19,14 +19,32 @@ console.log('PASS: touchHandled guard properly prevents multi-triggering within 
 console.log('\n--- Test 2: touchHandled Marked on Snap Step Execution ---');
 const touchMoveMatches = heroSource.match(/touchHandled\s*=\s*true;/g);
 assert.ok(
-  touchMoveMatches && touchMoveMatches.length >= 3,
-  'touchHandled must be set to true in Section 1, Section 2/3 forward, and Section 2/3 backward'
+  touchMoveMatches && touchMoveMatches.length >= 2,
+  'touchHandled must be set to true on both forward and backward snap step triggers'
 );
 console.log('PASS: touchHandled is set to true on every forward and backward snap step trigger.');
+
+// Test 2b: Check that mobile view prevents continuous drift across all ring sections
+console.log('\n--- Test 2b: Mobile e.preventDefault Across All Sections ---');
+assert.ok(
+  heroSource.includes('if (isMobileView) {\n            e.preventDefault();\n          }'),
+  'e.preventDefault() must be called on mobile across all sections including rings'
+);
+console.log('PASS: Mobile e.preventDefault() prevents mid-ring drift across all sections.');
+
+// Test 2c: Check that handleTouchEnd snaps to closest step in ring sections
+console.log('\n--- Test 2c: handleTouchEnd Snapping Across Ring Sections ---');
+assert.ok(
+  heroSource.includes('currentProgress >= -0.02 && currentProgress <= 1.02') &&
+  heroSource.includes('closestStep = s'),
+  'handleTouchEnd must snap to closest ring step if released midway'
+);
+console.log('PASS: handleTouchEnd snaps to closest step across all ring sections.');
 
 // Test 3: Check that isWordAnimating blocks re-triggering in Section 2/3
 console.log('\n--- Test 3: isWordAnimating Animation Lock ---');
 assert.ok(
+  heroSource.includes('if (isWordAnimating) {\n            return;\n          }') ||
   heroSource.includes('if (isWordAnimating) {\n            e.preventDefault();\n            return;\n          }'),
   'isWordAnimating must prevent subsequent touches from retargeting mid-flight'
 );

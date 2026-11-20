@@ -9,6 +9,7 @@ import { Ring3DModel } from './Ring3DModel';
  */
 export function NextSection({
   preparedRings,
+  onProjectSettled,
   stageRef,
   ringRefs,
   cylinderRefs,
@@ -86,6 +87,7 @@ export function NextSection({
                           textContent={item.ringText}
                           buttonText="VIEW PROJECT ↗"
                           projectUrl={item.href}
+                          onFrogSettledChange={settled => onProjectSettled?.(item.id, settled)}
                           onButtonClick={() => {
                             if (item.href && item.href !== '#') {
                               window.open(item.href, '_blank', 'noopener,noreferrer');

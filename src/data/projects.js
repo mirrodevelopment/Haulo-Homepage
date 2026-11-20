@@ -33,7 +33,7 @@ export const SPACE_ITEMS = [
     num: '02',
     title: 'STAKOR',
     subtitle: 'E-COMMERCE PLATFORM • AI INTEGRATION',
-    desc: 'A modular nutrition platform designed for clean customization, seamless shopping and an intelligent everyday product experience.',
+    desc: 'An AI-powered product innovation experience that transforms nutrition research and ideas into smarter product development possibilities.',
     ringText: {
       title: '02 / STAKOR',
       services: ['E-COMMERCE PLATFORM', 'UX / UI', 'AI INTEGRATION', 'DIGITAL PRODUCT', 'BRAND SYSTEM'],
@@ -47,7 +47,7 @@ export const SPACE_ITEMS = [
     num: '03',
     title: 'THINK',
     subtitle: 'CREATIVE DIRECTION • AI INTEGRATION',
-    desc: 'A thoughtful journey where ideas turn into plans, blending human creativity and intelligent technology.',
+    desc: 'A functional beverage experience that explores the rhythm of modern life through interactive design and immersive digital storytelling.',
     ringText: {
       title: '03 / AWKN',
       services: ['CREATIVE DIRECTION', 'VISUAL IDENTITY', '3D EXPERIENCE', 'BRAND WORLD', 'AI CONTENT'],
@@ -61,7 +61,7 @@ export const SPACE_ITEMS = [
     num: '04',
     title: 'BUILD',
     subtitle: 'PRODUCT DEVELOPMENT • SYSTEM INTEGRATION',
-    desc: 'From concept to creation, we build digital experiences that are scalable, functional and future-ready.',
+    desc: 'A modern beauty and skincare experience that makes product discovery more intuitive through thoughtful design and seamless digital interactions.',
     ringText: {
       title: '04 / TRULY BARE',
       services: ['LIFESTYLE COMMERCE', 'BRAND PLATFORM', 'UX / UI', 'DIGITAL EXPERIENCE', 'COMMUNITY'],

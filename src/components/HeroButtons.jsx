@@ -1,12 +1,13 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 
-export function HeroButtons({ onViewWork, onExplore }) {
+export function HeroButtons({ onViewWork, onExplore, websiteHref, secondaryLabel = 'EXPLORE CAPABILITIES', secondaryDisabled = false }) {
+  const Primary = websiteHref ? 'a' : 'button';
   return (
     <div className="hero-buttons">
 
       {/* VIEW WORK */}
-      <button className="tech-btn blue-btn" type="button" onClick={onViewWork}>
+      <Primary className="tech-btn blue-btn" {...(websiteHref ? { href: websiteHref, target: '_blank', rel: 'noopener noreferrer' } : { type: 'button', onClick: onViewWork })}>
         {/* Purposeful Four-Side Corner Technical SVG Frame */}
         <svg className="tech-btn-frame" viewBox="-2 -2 204 48" fill="none" preserveAspectRatio="none" aria-hidden="true">
           {/* Solid capsule fill */}
@@ -47,13 +48,13 @@ export function HeroButtons({ onViewWork, onExplore }) {
         </span>
 
         <span className="btn-text">
-          VIEW WORK
+          {websiteHref ? 'VISIT WEBSITE' : 'VIEW WORK'}
         </span>
-      </button>
+      </Primary>
 
 
       {/* EXPLORE CAPABILITIES */}
-      <button className="tech-btn pink-btn" type="button" onClick={onExplore}>
+      <button className="tech-btn pink-btn" type="button" onClick={onExplore} disabled={secondaryDisabled}>
         {/* Purposeful Four-Side Corner Technical SVG Frame */}
         <svg className="tech-btn-frame" viewBox="-2 -2 237 48" fill="none" preserveAspectRatio="none" aria-hidden="true">
           {/* Solid capsule fill */}
@@ -104,7 +105,7 @@ export function HeroButtons({ onViewWork, onExplore }) {
         </span>
 
         <span className="btn-text">
-          EXPLORE CAPABILITIES
+          {secondaryLabel}
         </span>
       </button>
 

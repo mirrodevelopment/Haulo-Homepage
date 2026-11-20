@@ -503,6 +503,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     let lastSpaceScrollPhase = 1.0;
     let targetSpaceOffsetY = 0;
     let currentSpaceOffsetY = 0;
+    let currentRingLockWeight = 0;
 
     if (facingRef) {
       facingRef.current = (yaw, pRel = 0, jumpFrac = 0, isSpace = false, scrollPhase = 0, modelScale = 1.0, dirTurn = 0, scrollDir = 1, spaceOffsetY = 0) => {
@@ -537,6 +538,11 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
       // the ring opening instead of aligning the canvas frame alone.
       facingRef.current.getBodyScreenOffset = () => bodyScreenOffset;
       facingRef.current.getSharedRoot = () => rootGroup;
+      facingRef.current.setRingLockWeight = (weight) => {
+        if (typeof weight === 'number') {
+          currentRingLockWeight = Math.max(0, Math.min(1, weight));
+        }
+      };
       facingRef.current.setMountedInRing = (mounted) => {
         isMountedInRing = Boolean(mounted);
         if (isMountedInRing) {
@@ -548,6 +554,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
       facingRef.current.restoreSharedRoot = () => {
         if (rootGroup.parent !== scene) scene.add(rootGroup);
         isMountedInRing = false;
+        currentRingLockWeight = 0;
         if (isHeroVisible) {
           startHeroRenderLoop();
         }
@@ -996,7 +1003,10 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
     let wasJumping = false;
     let lastLandTime = -999;
 
-    function tickFrogAnimation(delta, now) {
+    function tickFrogAnimation(delta, now, lockWeight) {
+      if (typeof lockWeight === 'number') {
+        currentRingLockWeight = Math.max(0, Math.min(1, lockWeight));
+      }
       const elapsed = (now - startTime) / 1000;
 
       if (modelInstance && mixer) {
@@ -1030,7 +1040,11 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
           } else {
             swimActivity *= Math.exp(-delta / 0.45);
           }
-          ambientSwimProgress += delta * (0.38 + 0.16 * swimActivity) * spaceFloatT;
+          const effectiveLock = Math.max(isMountedInRing ? 1.0 : 0.0, currentRingLockWeight);
+          // Normal swimming speed when floating between rings: 0.36
+          // Balanced, gentle ambient stroke when placed inside the ring: 0.19 (~5.2s stroke)
+          const baseSwimSpeed = THREE.MathUtils.lerp(0.36, 0.19, effectiveLock);
+          ambientSwimProgress += delta * (baseSwimSpeed + 0.16 * swimActivity) * spaceFloatT;
           const strokeCycle = ambientSwimProgress % 1;
           const swimTime = animClipDuration >= 13.80
             ? 11.80 + strokeCycle * 2
@@ -1048,7 +1062,7 @@ export default function Frog3D({ wordIndex = 0, className = '', style = {}, faci
             mixer.setTime(swimTime);
           }
 
-          modelInstance.rotation.x = actionConfig.rotation[0] - 0.06 * Math.sin(strokeCycle * Math.PI * 2) * spaceFloatT;
+          modelInstance.rotation.x = actionConfig.rotation[0] - (0.06 - 0.03 * effectiveLock) * Math.sin(strokeCycle * Math.PI * 2) * spaceFloatT;
           modelInstance.rotation.z = actionConfig.rotation[2] + (spaceDirTurn - 0.5) * 0.12 * spaceFloatT;
 
           // Neutralize root motion drift so the frog swims in-place at the center of the ring volume

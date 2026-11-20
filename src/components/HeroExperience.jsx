@@ -1,6 +1,8 @@
 import React, { useLayoutEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { createPortal } from 'react-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { HeroButtons } from './HeroButtons';
 import { Header } from './Header';
 import { LeftRail } from './LeftRail';
 import { RightRail } from './RightRail';
@@ -50,11 +52,10 @@ const WORD_WAYPOINTS = [
 const WORD_CALLOUTS = [
   // 0: HAULO (TR defines top of 'O', BL defines left leg of 'H', BR defines frog foot)
   {
-    trSub: 'IND / TN / CBE',
-    blBrand: 'HAULO',
-    blBrandSup: 'TM',
-    blLine1: 'DIGITAL / PHYSICAL / AI',
-    blLine2: 'FOR A BRIGHTER TOMORROW.',
+    trTitle: 'WELCOME TO HAULO’S WORLD',
+    trSub: 'DESIGN / ENGINEERING / AI',
+    blLine1: 'WE DESIGN WHAT PEOPLE INTERACT WITH',
+    blLine2: 'AND ENGINEER WHAT MAKES IT WORK.',
     hasColorBar: true,
     barColors: { bar1: '#20aef3', bar2: '#000000' },
     trPath: 'M4 36 L34 10 L100 10',
@@ -72,11 +73,10 @@ const WORD_CALLOUTS = [
   },
   // 1: DESIGN TO (TR defines top-right of 'T' in TO, BL defines bottom-right of 'D' in DESIGN)
   {
-    trSub: 'SYS / INT / FWD',
-    blBrand: 'HAULO',
-    blBrandSup: '®',
-    blLine1: 'DIGITAL / PHYSICAL / AI',
-    blLine2: 'FOR A BRIGHTER TOMORROW.',
+    trTitle: 'MAKE THE NEXT STEP',
+    trSub: 'FEEL OBVIOUS',
+    blLine1: 'WE TURN COMPLICATED PROCESSES INTO CLEAR STEPS.',
+    blLine2: 'WE MAKE THE NEXT ACTION EASY TO FIND.',
     hasColorBar: true,
     barColors: { bar1: '#20aef3', bar2: '#000000' },
     trPath: 'M4 42 L36 12 L96 12',
@@ -94,11 +94,10 @@ const WORD_CALLOUTS = [
   },
   // 2: THINK (TR defines top diagonal arm of 'K', BL defines bottom of left leg of 'H')
   {
-    trSub: 'SYS / INT / FWD',
-    blBrand: 'HAULO',
-    blBrandSup: '®',
-    blLine1: 'DIGITAL / PHYSICAL / AI',
-    blLine2: 'FOR A BRIGHTER TOMORROW.',
+    trTitle: 'PRODUCT DISCOVERY',
+    trSub: 'RESEARCH / PROTOTYPING',
+    blLine1: 'WE ASK PEOPLE TO SHOW US HOW THEY WORK.',
+    blLine2: 'THE STEPS THEY REPEAT TELL US WHAT’S WORTH REDESIGNING.',
     hasColorBar: true,
     barColors: { bar1: '#20aef3', bar2: '#000000' },
     trPath: 'M4 38 L32 10 L96 10',
@@ -116,11 +115,10 @@ const WORD_CALLOUTS = [
   },
   // 3: BUILD (TR defines top curve of 'D', BL defines bottom bowl of 'B')
   {
-    trSub: 'SYS / INT / FWD',
-    blBrand: 'HAULO',
-    blBrandSup: '®',
-    blLine1: 'IDEAS TO REALITY.',
-    blLine2: 'BUILT FOR A BRIGHTER TOMORROW.',
+    trTitle: 'WEB / MOBILE',
+    trSub: 'SOFTWARE SYSTEMS',
+    blLine1: 'WE DESIGN FOR THE PEOPLE WHO USE IT.',
+    blLine2: 'WE ENGINEER FOR THE TEAMS WHO RUN IT.',
     hasColorBar: true,
     barColors: { bar1: '#20aef3', bar2: '#000000' },
     trPath: 'M4 36 L34 10 L96 10',
@@ -138,11 +136,10 @@ const WORD_CALLOUTS = [
   },
   // 4: AND EVOLVE (TR defines top of 'V' in EVOLVE, BL defines bottom of 'N' in AND)
   {
-    trSub: 'SYS / INT / FWD',
-    blBrand: 'HAULO',
-    blBrandSup: '®',
-    blLine1: 'SYSTEMS THAT ADAPT.',
-    blLine2: 'BUILT TO EVOLVE.',
+    trTitle: 'CONNECTED SYSTEMS',
+    trSub: 'AUTOMATION / APPLIED AI',
+    blLine1: 'WE CONNECT THE TOOLS THAT HOLD YOUR DATA.',
+    blLine2: 'WE AUTOMATE THE WORK BETWEEN THEM.',
     hasColorBar: true,
     barColors: { bar1: '#20aef3', bar2: '#000000' },
     trPath: 'M4 36 L32 10 L96 10',
@@ -160,9 +157,8 @@ const WORD_CALLOUTS = [
   },
   // 5: EDITORIAL HERO (TR defines glowing frog ear antenna, BL defines BUILT TO EVOLVE. headline)
   {
-    trSub: 'SYS / INT / FWD',
-    blBrand: 'HAULO',
-    blBrandSup: '®',
+    trTitle: 'HOW WE WORK',
+    trSub: 'NEXT UP / OUR WORK',
     blLine1: 'DIGITAL / PHYSICAL / INTELLIGENT',
     blLine2: 'SYSTEMS BUILT TO MOVE FORWARD.',
     hasColorBar: true,
@@ -490,6 +486,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
   const hideHeroVisuals = (hasSplash || isJourneyActive) && !isHandoff;
   const heroRef = useRef(null);
   const pinRef = useRef(null);
+  const projectBackgroundRef = useRef(null);
+  const [settledProject, setSettledProject] = useState(null);
   const worldRef = useRef(null);
   const heroSceneRef = useRef(null);
   const conveyorSceneRef = useRef(null);
@@ -508,8 +506,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
   const calloutBlRef = useRef(null);
   const calloutBrRef = useRef(null);
   const calloutTrSubRef = useRef(null);
-  const calloutBlBrandRef = useRef(null);
-  const calloutBlSupRef = useRef(null);
+  const calloutTrTitleRef = useRef(null);
   const calloutBlLine1Ref = useRef(null);
   const calloutBlLine2Ref = useRef(null);
   const calloutBlColorBarRef = useRef(null);
@@ -1508,6 +1505,23 @@ export const HeroExperience = forwardRef(function HeroExperience(
 
         const travel = ringTravel;
 
+        // Keep the glass layers aligned with their ring stops.
+        for (let i = 1; i < SPACE_COUNT; i++) {
+          const background = projectBackgroundRef.current?.children[i - 1];
+          if (!background) continue;
+          const center = RING_OFFSETS[i] + 0.5;
+          const previousCenter = RING_OFFSETS[i - 1] + 0.5;
+          const t = Math.max(0, Math.min(1, (travel - previousCenter) / (center - previousCenter)));
+          const nextCenter = (RING_OFFSETS[i + 1] ?? Infinity) + 0.5;
+          background.hidden = t === 0 || travel >= nextCenter;
+          if (background.hidden) continue;
+
+          // Ease the glass reflection across the swim.
+          const blend = t * t * (3 - 2 * t);
+          background.style.opacity = blend.toFixed(4);
+          background.style.setProperty('--light-offset', ((1 - blend) * 6).toFixed(2) + '%');
+        }
+
         // Progressive lazy loading triggers:
         // Ring 0 (Portfolio Intro): preload when user enters Editorial Hero (progress >= 0.35)
         if (globalProgress >= 0.35 && !preloadedRingIndices.has(0)) {
@@ -1672,7 +1686,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
             }
           }
           if (allWarmed) {
-            frogFacingRef.current?.restoreSharedRoot?.();
+            frogFacingRef.current?.setRingLockWeight?.(0);
+          frogFacingRef.current?.restoreSharedRoot?.();
             warmedUpRingsRef.current = true;
           }
         }
@@ -1723,6 +1738,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
           container?.setSharedFrogScreenTarget?.(targetNdcX, targetNdcY, lockWeight, approachOffsetNdcY);
           if (container?.mountSharedFrog?.(sharedFrogRoot, handoffScreenPosition)) {
             frogFacingRef.current?.setMountedInRing?.(true);
+            frogFacingRef.current?.setRingLockWeight?.(lockWeight);
             if (previousRing !== -1 && previousRing !== focusedProjectRing) {
               previousContainer?.unmountSharedFrog?.(sharedFrogRoot);
               if (previousRing >= 0 && ringRefs.current[previousRing]) {
@@ -1753,6 +1769,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
               ringRefs.current[i]?.style.removeProperty('transform-style');
             }
           }
+          frogFacingRef.current?.setRingLockWeight?.(0);
           frogFacingRef.current?.restoreSharedRoot?.();
           if (sharedFrogRingRef.current === 0 && globalProgress <= SPACE_FOCUS_START) {
             frogSet?.opacity(frogAlpha);
@@ -1858,11 +1875,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
           if (calloutTrSubRef.current && calloutTrSubRef.current.textContent !== calloutData.trSub) {
             calloutTrSubRef.current.textContent = calloutData.trSub;
           }
-          if (calloutBlBrandRef.current && calloutBlBrandRef.current.textContent !== calloutData.blBrand) {
-            calloutBlBrandRef.current.textContent = calloutData.blBrand;
-          }
-          if (calloutBlSupRef.current && calloutBlSupRef.current.textContent !== calloutData.blBrandSup) {
-            calloutBlSupRef.current.textContent = calloutData.blBrandSup;
+          if (calloutTrTitleRef.current && calloutTrTitleRef.current.textContent !== calloutData.trTitle) {
+            calloutTrTitleRef.current.textContent = calloutData.trTitle;
           }
           if (calloutBlLine1Ref.current && calloutBlLine1Ref.current.textContent !== calloutData.blLine1) {
             calloutBlLine1Ref.current.textContent = calloutData.blLine1;
@@ -1891,6 +1905,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
             calloutBlRef.current.style.flexDirection = calloutData.blFlexDirection || 'column';
             calloutBlRef.current.style.alignItems = calloutData.blAlignItems || 'flex-start';
             calloutBlRef.current.style.gap = calloutData.blGap || '3px';
+            calloutBlRef.current.classList.toggle('callout-bl--opening', activeWordIdx < 5);
             calloutBlRef.current.classList.toggle('callout-bl--other-words', activeWordIdx >= 1);
           }
           if (blSvgRef.current && calloutData.blSvgSize) {
@@ -2101,16 +2116,47 @@ export const HeroExperience = forwardRef(function HeroExperience(
         }, 120);
       };
 
+      let activeScrollTween = null;
+
       const animateToScrollY = (targetY, duration, options = {}) => {
         const { isTouch = false } = options;
+        const isMobileView = (geo.isMobile || window.innerWidth <= 768);
         isWordAnimating = true;
-        const jumpDuration = typeof duration === 'number' ? duration : (isTouch ? 0.85 : 1.20);
+        const jumpDuration = typeof duration === 'number' ? duration : (isTouch ? 0.75 : 1.20);
         if (wordAnimSafetyTimer) clearTimeout(wordAnimSafetyTimer);
         wordAnimSafetyTimer = setTimeout(() => {
           isWordAnimating = false;
           wordAnimSafetyTimer = null;
         }, (jumpDuration + 0.15) * 1000);
-        if (window.lenis) {
+
+        // On mobile view (or touch), animate via GSAP driving immediate scroll updates.
+        // This prevents Lenis virtualScroll from aborting the animation when touch events occur.
+        if (isMobileView || isTouch) {
+          if (activeScrollTween) {
+            activeScrollTween.kill();
+            activeScrollTween = null;
+          }
+          const currentScroll = window.lenis ? window.lenis.scroll : window.scrollY;
+          const scrollProxy = { y: currentScroll };
+          activeScrollTween = gsap.to(scrollProxy, {
+            y: targetY,
+            duration: jumpDuration,
+            ease: 'power2.out',
+            overwrite: 'auto',
+            onUpdate: () => {
+              if (window.lenis) {
+                window.lenis.scrollTo(scrollProxy.y, { immediate: true, force: true });
+              } else {
+                window.scrollTo(0, scrollProxy.y);
+              }
+            },
+            onComplete: () => {
+              activeScrollTween = null;
+              finishWordAnimation();
+            }
+          });
+        } else if (window.lenis) {
+          // On desktop, use Lenis's smooth wheel scrollTo
           window.lenis.scrollTo(targetY, {
             duration: jumpDuration,
             easing: (t) => 1 - Math.pow(1 - t, 2.2),
@@ -2143,42 +2189,10 @@ export const HeroExperience = forwardRef(function HeroExperience(
         if (!totalDist || totalDist <= 0) return;
 
         const currentProgress = Math.max(0, (currentY - startY) / totalDist);
-
-        // Mobile snap scroll for Section 1 (handles trackpad / wheel in mobile view or emulation)
-        if ((geo.isMobile || window.innerWidth <= 768) && currentProgress <= 0.40) {
-          e.preventDefault();
-          const now = performance.now();
-          if (isWordAnimating || Math.abs(e.deltaY) < 8 || (now - lastWheelTriggerTime < 380)) return;
-
-          lastWheelTriggerTime = now;
-          const S1_STEPS = [0.00, 0.09, 0.18, 0.27, 0.36];
-          let currentIdx = 0;
-          let minD = 999;
-          S1_STEPS.forEach((s, i) => {
-            const d = Math.abs(s - currentProgress);
-            if (d < minD) {
-              minD = d;
-              currentIdx = i;
-            }
-          });
-
-          if (e.deltaY > 0) {
-            scrollDirection = 1;
-            const nextStep = currentProgress >= 0.35 ? 0.46 : S1_STEPS[Math.min(4, currentIdx + 1)];
-            const targetY = startY + nextStep * totalDist;
-            animateToScrollY(targetY, 0.85, { isTouch: true, lock: true, targetProgress: nextStep });
-          } else if (e.deltaY < 0) {
-            scrollDirection = -1;
-            const prevStep = S1_STEPS[Math.max(0, currentIdx - 1)];
-            const targetY = startY + prevStep * totalDist;
-            animateToScrollY(targetY, 0.85, { isTouch: true, lock: true, targetProgress: prevStep });
-          }
-          return;
-        }
+        const snapLimitY = startY + 1.05 * totalDist;
+        const isMobileView = (geo.isMobile || window.innerWidth <= 768);
 
         // Snapping boundary: active through words, editorial hero, and all space mech rings
-        const snapLimitY = startY + 1.05 * totalDist;
-
         if (currentY >= startY - 10 && currentY <= snapLimitY) {
           if (Math.abs(e.deltaY) < 6) return;
 
@@ -2197,7 +2211,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
               e.preventDefault();
               const targetY = startY + nextStep * totalDist;
               const isRingFlight = (currentProgress >= 0.40 && nextStep >= 0.55);
-              animateToScrollY(targetY, isRingFlight ? 2.15 : 1.20);
+              const duration = isMobileView ? (isRingFlight ? 1.05 : 0.85) : (isRingFlight ? 2.15 : 1.20);
+              animateToScrollY(targetY, duration, { isTouch: isMobileView, lock: true, targetProgress: nextStep });
             }
           } else if (e.deltaY < 0) {
             // Scrolling UP: find previous step
@@ -2207,7 +2222,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
               e.preventDefault();
               const targetY = startY + prevStep * totalDist;
               const isRingFlight = (currentProgress >= 0.55 && prevStep >= 0.45);
-              animateToScrollY(targetY, isRingFlight ? 2.15 : 1.20);
+              const duration = isMobileView ? (isRingFlight ? 1.05 : 0.85) : (isRingFlight ? 2.15 : 1.20);
+              animateToScrollY(targetY, duration, { isTouch: isMobileView, lock: true, targetProgress: prevStep });
             }
           }
         }
@@ -2215,32 +2231,100 @@ export const HeroExperience = forwardRef(function HeroExperience(
 
       let touchStartY = 0;
       let touchStartX = 0;
+      let lastTouchY = 0;
+      let touchStartProgress = 0;
       let touchHandled = false;
       let didUserDrag = false;
+      let isFingerDown = false;
       let lastTouchTriggerTime = 0;
+      let mobileSettleTimer = null;
+
+      const checkMobileSnapSettle = () => {
+        const isMobileView = (geo.isMobile || window.innerWidth <= 768);
+        if (!isMobileView || !heroActiveRef.current || isFingerDown || isWordAnimating) return;
+
+        const currentY = window.lenis ? window.lenis.scroll : window.scrollY;
+        const startY = heroScrollTrigger.start;
+        const totalDist = heroScrollTrigger.end - heroScrollTrigger.start;
+        if (!totalDist || totalDist <= 0) return;
+
+        const currentProgress = (currentY - startY) / totalDist;
+        // Check if inside hero / ring scroll range
+        if (currentProgress >= 0.00 && currentProgress <= 1.02) {
+          let closestStep = SNAP_STEPS[0];
+          let minDiff = 999;
+          SNAP_STEPS.forEach((s) => {
+            const diff = Math.abs(s - currentProgress);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestStep = s;
+            }
+          });
+          // If stopped off-step by more than 0.010 (e.g. between rings):
+          // Advance to the ring in the active scrolling direction!
+          if (minDiff > 0.010) {
+            let targetStep;
+            if (scrollDirection === 1) {
+              targetStep = SNAP_STEPS.find((s) => s > currentProgress + 0.005) || closestStep;
+            } else {
+              targetStep = [...SNAP_STEPS].reverse().find((s) => s < currentProgress - 0.005) || closestStep;
+            }
+
+            const targetY = startY + targetStep * totalDist;
+            const isRingFlight = targetStep >= 0.55;
+            animateToScrollY(targetY, isRingFlight ? 0.75 : 0.65, {
+              isTouch: true,
+              lock: true,
+              targetProgress: targetStep
+            });
+          }
+        }
+      };
+
+      const handleScrollActivity = () => {
+        const isMobileView = (geo.isMobile || window.innerWidth <= 768);
+        if (!isMobileView) return;
+        if (mobileSettleTimer) clearTimeout(mobileSettleTimer);
+        // Settle debounce: 130ms of stillness while finger is lifted -> snap cleanly into ring
+        mobileSettleTimer = setTimeout(checkMobileSnapSettle, 130);
+      };
 
       const handleTouchStart = (e) => {
         if (e.touches && e.touches[0]) {
+          isFingerDown = true;
           touchStartY = e.touches[0].clientY;
           touchStartX = e.touches[0].clientX;
+          lastTouchY = e.touches[0].clientY;
           touchHandled = false;
           didUserDrag = false;
+
+          const currentY = window.lenis ? window.lenis.scroll : window.scrollY;
+          const startY = heroScrollTrigger.start;
+          const totalDist = heroScrollTrigger.end - heroScrollTrigger.start;
+          if (totalDist > 0) {
+            touchStartProgress = Math.max(0, (currentY - startY) / totalDist);
+          }
         }
       };
 
       const handleTouchMove = (e) => {
         if (!heroActiveRef.current || !e.touches || !e.touches[0]) return;
+        lastTouchY = e.touches[0].clientY;
         const currentY = window.lenis ? window.lenis.scroll : window.scrollY;
         const startY = heroScrollTrigger.start;
         const totalDist = heroScrollTrigger.end - heroScrollTrigger.start;
         if (!totalDist || totalDist <= 0) return;
 
         const currentProgress = Math.max(0, (currentY - startY) / totalDist);
+        const snapLimitY = startY + 1.05 * totalDist;
+        const isMobileView = (geo.isMobile || window.innerWidth <= 768);
 
-        // Mobile snap scroll for Section 1 (0.00 to 0.36): intentional swipe triggers the jump to next/prev text area
-        if ((geo.isMobile || window.innerWidth <= 768) && currentProgress <= 0.40) {
-          // Prevent default continuous dragging in Section 1 on mobile
-          e.preventDefault();
+        // Snap scroll active across all words, editorial hero, and all 5 space mech rings
+        if (currentY >= startY - 10 && currentY <= snapLimitY) {
+          // On mobile view, prevent continuous drift across ALL sections (words, editorial hero, and ring sections)
+          if (isMobileView) {
+            e.preventDefault();
+          }
 
           if (isWordAnimating) {
             return;
@@ -2249,7 +2333,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
           const deltaY = touchStartY - e.touches[0].clientY;
           const deltaX = touchStartX - e.touches[0].clientX;
 
-          // Intentional swipe threshold (10px): cleanly filters out thumb resting/tap jitter while responding instantly to any swipe
+          // Intentional swipe threshold (10px): cleanly filters out thumb resting/tap jitter while responding instantly to any slight swipe
           if (Math.abs(deltaY) < 10 || Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
             return;
           }
@@ -2257,101 +2341,36 @@ export const HeroExperience = forwardRef(function HeroExperience(
           didUserDrag = true;
 
           const now = performance.now();
-          if (now - lastTouchTriggerTime < 350) {
-            return;
-          }
-
-          if (!touchHandled) {
-            touchHandled = true;
-            lastTouchTriggerTime = now;
-
-            const S1_STEPS = [0.00, 0.09, 0.18, 0.27, 0.36];
-            let currentIdx = 0;
-            let minD = 999;
-            S1_STEPS.forEach((s, i) => {
-              const d = Math.abs(s - currentProgress);
-              if (d < minD) {
-                minD = d;
-                currentIdx = i;
-              }
-            });
-
-            if (deltaY > 0) {
-              // Swipe UP (scroll down) -> advance directly to next text area
-              scrollDirection = 1;
-              const nextStep = currentProgress >= 0.35 ? 0.46 : S1_STEPS[Math.min(4, currentIdx + 1)];
-              const targetY = startY + nextStep * totalDist;
-              animateToScrollY(targetY, 0.85, {
-                isTouch: true,
-                lock: true,
-                targetProgress: nextStep
-              });
-            } else if (deltaY < 0) {
-              // Swipe DOWN (scroll up) -> advance directly to previous text area
-              scrollDirection = -1;
-              const prevStep = S1_STEPS[Math.max(0, currentIdx - 1)];
-              const targetY = startY + prevStep * totalDist;
-              animateToScrollY(targetY, 0.85, {
-                isTouch: true,
-                lock: true,
-                targetProgress: prevStep
-              });
-            }
-          }
-          return;
-        }
-
-        const snapLimitY = startY + 1.05 * totalDist;
-        if (currentY >= startY - 10 && currentY <= snapLimitY) {
-          const deltaY = touchStartY - e.touches[0].clientY;
-          const deltaX = touchStartX - e.touches[0].clientX;
-
-          // Ignore minor finger jitter (< 18px) or horizontal-dominant swipes
-          if (Math.abs(deltaY) < 18 || Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
-            return;
-          }
-
-          if (isWordAnimating) {
-            e.preventDefault();
-            return;
-          }
-
-          const now = performance.now();
           // One touch gesture triggers at most one snap step; throttle at 350ms
           if (touchHandled || now - lastTouchTriggerTime < 350) {
-            e.preventDefault();
             return;
           }
 
-          didUserDrag = true;
-
           if (deltaY > 0) {
-            // Swipe UP -> advance forward (scroll DOWN)
+            // Swipe UP -> advance forward (scroll DOWN) to next step
             scrollDirection = 1;
             const nextStep = SNAP_STEPS.find((s) => s > currentProgress + 0.012);
             if (nextStep !== undefined) {
-              e.preventDefault();
               touchHandled = true;
               lastTouchTriggerTime = now;
               const targetY = startY + nextStep * totalDist;
               const isRingFlight = (currentProgress >= 0.40 && nextStep >= 0.55);
-              animateToScrollY(targetY, isRingFlight ? 1.35 : 0.85, {
+              animateToScrollY(targetY, isRingFlight ? (isMobileView ? 0.85 : 1.35) : 0.65, {
                 isTouch: true,
                 lock: true,
                 targetProgress: nextStep
               });
             }
           } else if (deltaY < 0) {
-            // Swipe DOWN -> advance backward (scroll UP)
+            // Swipe DOWN -> advance backward (scroll UP) to previous step
             scrollDirection = -1;
             const prevStep = [...SNAP_STEPS].reverse().find((s) => s < currentProgress - 0.012);
             if (prevStep !== undefined) {
-              e.preventDefault();
               touchHandled = true;
               lastTouchTriggerTime = now;
               const targetY = startY + prevStep * totalDist;
               const isRingFlight = (currentProgress >= 0.55 && prevStep >= 0.45);
-              animateToScrollY(targetY, isRingFlight ? 1.35 : 0.85, {
+              animateToScrollY(targetY, isRingFlight ? (isMobileView ? 0.85 : 1.35) : 0.65, {
                 isTouch: true,
                 lock: true,
                 targetProgress: prevStep
@@ -2363,41 +2382,87 @@ export const HeroExperience = forwardRef(function HeroExperience(
 
       const handleTouchEnd = () => {
         const wasDragged = didUserDrag;
+        const wasHandled = touchHandled;
+        isFingerDown = false;
+
+        const isMobileView = (geo.isMobile || window.innerWidth <= 768);
+        if (!isMobileView || !heroActiveRef.current) {
+          touchStartY = 0;
+          touchStartX = 0;
+          lastTouchY = 0;
+          touchHandled = false;
+          didUserDrag = false;
+          return;
+        }
+
+        const deltaY = touchStartY - lastTouchY;
         touchStartY = 0;
         touchStartX = 0;
+        lastTouchY = 0;
         touchHandled = false;
         didUserDrag = false;
 
-        // ONLY snap on touch release if the user actually dragged their finger (never on a tap or resting touch)
-        // and only if the position is significantly off from a step (> 0.02, ~90px)
-        if (wasDragged && (geo.isMobile || window.innerWidth <= 768) && heroActiveRef.current && !isWordAnimating) {
+        // If an animation was already triggered and is actively progressing, let it finish cleanly
+        if (isWordAnimating && wasHandled) {
+          return;
+        }
+
+        // If the user touched and dragged, snap directly in the SCROLLING DIRECTION!
+        // Never return back to the same ring when scrolling away from it.
+        if (wasDragged) {
           const currentY = window.lenis ? window.lenis.scroll : window.scrollY;
           const startY = heroScrollTrigger.start;
           const totalDist = heroScrollTrigger.end - heroScrollTrigger.start;
           if (totalDist > 0) {
             const currentProgress = (currentY - startY) / totalDist;
-            if (currentProgress >= -0.02 && currentProgress <= 0.40) {
-              const S1_STEPS = [0.00, 0.09, 0.18, 0.27, 0.36];
-              let closestStep = S1_STEPS[0];
+            if (currentProgress >= -0.02 && currentProgress <= 1.02) {
+              let closestStep = SNAP_STEPS[0];
               let minDiff = 999;
-              S1_STEPS.forEach((s) => {
+              SNAP_STEPS.forEach((s) => {
                 const diff = Math.abs(s - currentProgress);
                 if (diff < minDiff) {
                   minDiff = diff;
                   closestStep = s;
                 }
               });
-              if (minDiff > 0.02) {
-                const targetY = startY + closestStep * totalDist;
-                animateToScrollY(targetY, 0.65, {
+
+              let targetStep = closestStep;
+              if (deltaY > 6) {
+                // Swiped UP -> user intends to scroll DOWN / FORWARD to next ring
+                scrollDirection = 1;
+                targetStep = SNAP_STEPS.find((s) => s > touchStartProgress + 0.012) ||
+                             SNAP_STEPS.find((s) => s > currentProgress + 0.005) ||
+                             closestStep;
+              } else if (deltaY < -6) {
+                // Swiped DOWN -> user intends to scroll UP / BACKWARD to previous ring
+                scrollDirection = -1;
+                targetStep = [...SNAP_STEPS].reverse().find((s) => s < touchStartProgress - 0.012) ||
+                             [...SNAP_STEPS].reverse().find((s) => s < currentProgress - 0.005) ||
+                             closestStep;
+              } else if (scrollDirection === 1) {
+                targetStep = SNAP_STEPS.find((s) => s > currentProgress + 0.005) || closestStep;
+              } else if (scrollDirection === -1) {
+                targetStep = [...SNAP_STEPS].reverse().find((s) => s < currentProgress - 0.005) || closestStep;
+              }
+
+              const diff = Math.abs(targetStep - currentProgress);
+              if (diff > 0.008) {
+                const targetY = startY + targetStep * totalDist;
+                const isRingFlight = targetStep >= 0.55;
+                animateToScrollY(targetY, isRingFlight ? 0.75 : 0.65, {
                   isTouch: true,
                   lock: true,
-                  targetProgress: closestStep
+                  targetProgress: targetStep
                 });
+                return;
               }
             }
           }
         }
+
+        // Also schedule settle check in case native inertia continues after finger release
+        if (mobileSettleTimer) clearTimeout(mobileSettleTimer);
+        mobileSettleTimer = setTimeout(checkMobileSnapSettle, 130);
       };
 
       window.addEventListener('wheel', handleWheel, { passive: false });
@@ -2405,6 +2470,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
       window.addEventListener('touchmove', handleTouchMove, { passive: false });
       window.addEventListener('touchend', handleTouchEnd, { passive: true });
       window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+      window.addEventListener('scroll', handleScrollActivity, { passive: true });
+      window.addEventListener('scrollend', checkMobileSnapSettle, { passive: true });
 
       const tickerUpdate = () => {
         if (!heroActiveRef.current || isConveyorSettledRef.current) return;
@@ -2416,6 +2483,14 @@ export const HeroExperience = forwardRef(function HeroExperience(
         if (landingAnimTimelineRef.current) {
           landingAnimTimelineRef.current.kill();
         }
+        if (activeScrollTween) {
+          activeScrollTween.kill();
+          activeScrollTween = null;
+        }
+        if (mobileSettleTimer) {
+          clearTimeout(mobileSettleTimer);
+          mobileSettleTimer = null;
+        }
         clearTimeout(dimTimer);
         window.removeEventListener('resize', refreshDims);
         window.removeEventListener('wheel', handleWheel);
@@ -2423,6 +2498,8 @@ export const HeroExperience = forwardRef(function HeroExperience(
         window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener('touchcancel', handleTouchEnd);
+        window.removeEventListener('scroll', handleScrollActivity);
+        window.removeEventListener('scrollend', checkMobileSnapSettle);
         gsap.ticker.remove(tickerUpdate);
       };
     });
@@ -2444,6 +2521,17 @@ export const HeroExperience = forwardRef(function HeroExperience(
                 causticsRef={causticsRef}
                 currentsRef={currentsRef}
               />
+
+              <div className="project-glass-background" ref={projectBackgroundRef}>
+                {SPACE_ITEMS.filter(item => !item.isIntro).map(item => (
+                  <section className="project-glass-scene" hidden key={item.id}>
+                    <div className="project-glass-copy" data-settled={settledProject === item.id} aria-hidden={settledProject !== item.id}>
+                      <h2>{item.ringText.title.split(' / ')[1]}</h2>
+                      <p>{item.desc}</p>
+                    </div>
+                  </section>
+                ))}
+              </div>
 
               {/* FOREGROUND HERO VISUALS (Explicitly hidden during splash & journey to prevent transparent canvas overlay stacked text) */}
               <div
@@ -2479,6 +2567,7 @@ export const HeroExperience = forwardRef(function HeroExperience(
 
                 {/* 3. CONTINUOUS 3D SPACE MECH RING SPLINE CONVEYOR */}
                 <NextSection
+                  onProjectSettled={(id, settled) => setSettledProject(current => settled ? id : current === id ? null : current)}
                   stageRef={spaceWorldRef}
                   ringRefs={ringRefs}
                   cylinderRefs={cylinderRefs}
@@ -2505,6 +2594,14 @@ export const HeroExperience = forwardRef(function HeroExperience(
           >
 
 
+            {createPortal(<div className="project-glass-actions" hidden={hideHeroVisuals}>
+              {SPACE_ITEMS.filter(item => !item.isIntro).map(item => (
+                <div key={item.id} data-settled={settledProject === item.id} inert={settledProject !== item.id}>
+                  <HeroButtons websiteHref={item.href} secondaryLabel="KNOW MORE" secondaryDisabled />
+                </div>
+              ))}
+            </div>, document.body)}
+
             {/* PURPOSEFUL TECHNICAL CALLOUTS WITH PINK LEADER LINES (EXACT REFERENCE PARITY) */}
             <div className="hero-callout hero-callout--tr" ref={calloutTrRef}>
               <svg className="callout-leader-line callout-leader-line--tr" width="108" height="78" viewBox="0 0 108 78" fill="none" aria-hidden="true">
@@ -2522,22 +2619,22 @@ export const HeroExperience = forwardRef(function HeroExperience(
               </svg>
               <div className="callout-text-group" ref={trTextGroupRef}>
                 <div className="callout-header-row">
-                  <span className="callout-title">EST.2026</span>
+                  <span className="callout-title" ref={calloutTrTitleRef}>{WORD_CALLOUTS[0].trTitle}</span>
                 </div>
-                <div className="callout-subtitle" ref={calloutTrSubRef}>IND / TN / CBE</div>
+                <div className="callout-subtitle" ref={calloutTrSubRef}>{WORD_CALLOUTS[0].trSub}</div>
               </div>
             </div>
 
-            <div className="hero-callout hero-callout--bl" ref={calloutBlRef}>
+            <div className="hero-callout hero-callout--bl callout-bl--opening" ref={calloutBlRef}>
               <div className="callout-text-group" ref={blTextGroupRef}>
                 <div className="callout-header-row">
                   <span className="callout-title">
-                    <span ref={calloutBlBrandRef}>HAULO</span>
-                    <sup ref={calloutBlSupRef}>TM</sup>
+                    HAULO
+                    <sup>®</sup>
                   </span>
                 </div>
-                <div className="callout-subtitle" ref={calloutBlLine1Ref}>DIGITAL / PHYSICAL / AI</div>
-                <div className="callout-detail" ref={calloutBlLine2Ref}>FOR A BRIGHTER TOMORROW.</div>
+                <div className="callout-subtitle" ref={calloutBlLine1Ref}>{WORD_CALLOUTS[0].blLine1}</div>
+                <div className="callout-detail" ref={calloutBlLine2Ref}>{WORD_CALLOUTS[0].blLine2}</div>
                 <div className="callout-hash-row">
                   <svg className="callout-hash-stripes-svg" width="38" height="10" viewBox="0 0 38 10" fill="none" aria-hidden="true">
                     <path d="M6 0h3L3 10H0z M11 0h3L8 10H5z M16 0h3L13 10h-3z M21 0h3L18 10h-3z M26 0h3L23 10h-3z M31 0h3L28 10h-3z M36 0h3L33 10h-3z" fill="#000000" />
@@ -2570,9 +2667,9 @@ export const HeroExperience = forwardRef(function HeroExperience(
                     <path d="M6 0h3L3 10H0z M11 0h3L8 10H5z M16 0h3L13 10h-3z M21 0h3L18 10h-3z M26 0h3L23 10h-3z M31 0h3L28 10h-3z M36 0h3L33 10h-3z M41 0h3L38 10h-3z M46 0h3L43 10h-3z M51 0h3L48 10h-3z M56 0h3L53 10h-3z M61 0h3L58 10h-3z" fill="#000000" />
                   </svg>
                 </div>
-                <div className="callout-subtitle">OBJECT_001</div>
+                <div className="callout-subtitle">MEET YOUR GUIDE</div>
                 <div className="callout-title">HAULO FROG</div>
-                <div className="callout-detail">V1.0 // 2024</div>
+                <div className="callout-detail">DISCOVER HAULO WITH ME</div>
               </div>
             </div>
 

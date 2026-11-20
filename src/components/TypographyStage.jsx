@@ -15,7 +15,7 @@ export function TypographyStage({
     <div className="typography-stage">
       {/* 3D Moving Typography */}
       <WordLayer word="HAULO" className="word-haulo" imgSrc="/HAULO-LOGO-TEXT.png" alt="HAULO" ref={hauloRef} />
-      <WordLayer word="DESIGN TO" className="word-design" ref={designRef} />
+      <WordLayer word="DESINED TO" className="word-design" ref={designRef} />
       <WordLayer word="THINK" className="word-think" ref={thinkRef} />
       <WordLayer word="BUILD" className="word-build" ref={buildRef} />
       <WordLayer word="AND EVOLVE" className="word-evolve" ref={evolveRef} />

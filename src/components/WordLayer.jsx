@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 
 // Exact target dimensions matching the 4 reference images
 const WORD_CONFIGS = {
-  'DESIGN TO': {
+  'DESINED TO': {
     w: 1548,
     h: 394,
     y: 366,

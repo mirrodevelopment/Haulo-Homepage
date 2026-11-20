@@ -29,7 +29,7 @@ function playMechanicalClickSound() {
 }
 
 // Render razor-sharp, high-DPI texture for the 3D ring screen button
-function drawButtonTexture(ctx, width, height, text, isHovered, isPressed) {
+function drawButtonTexture(ctx, width, height, text, isHovered, isPressed, mobileLabel = false) {
   ctx.clearRect(0, 0, width, height);
 
   // 1. Sleek graphite dark screen background
@@ -96,6 +96,16 @@ function drawButtonTexture(ctx, width, height, text, isHovered, isPressed) {
   const label = (text || 'VIEW PROJECT ↗').trim();
   if (label) {
     ctx.save();
+    if (mobileLabel) {
+      ctx.font = 'bold 154px Arial, sans-serif';
+      ctx.fillStyle = isPressed ? '#A8F020' : isHovered ? '#C2FA36' : '#FFFFFF';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.fillText('VIEW', 568, 108);
+      ctx.fillText('PROJECT ↗', 568, 269, 836);
+      ctx.restore();
+      return;
+    }
     let fontSize = 84;
     ctx.font = `900 ${fontSize}px "Space Mono", "Roboto Mono", "Courier New", monospace, sans-serif`;
     ctx.textBaseline = 'middle';
@@ -246,9 +256,23 @@ function createMobilePanelCopy(content, left, divider, right, renderer) {
 
   const descWidth = canvas.width - split - gutter * 2;
   // Leave the space below the paragraph free for the ring's slanted accent marks.
-  const pitch = (canvas.height - row * 0.72) / Math.max(4, content.description.length);
-  ctx.font = '600 ' + Math.round(pitch * 0.92) + 'px Arial, sans-serif';
-  content.description.forEach((line, i) => ctx.fillText(line, split + gutter, (i + 0.5) * pitch, descWidth));
+  const paragraph = content.description.join(' ').split(/\s+/);
+  const availableHeight = canvas.height - row * 0.72;
+  // Wrap by measured word width instead of squeezing each authored line independently.
+  let lines;
+  let fontSize = Math.round(row);
+  for (; fontSize > 1; fontSize--) {
+    ctx.font = `600 ${fontSize}px Arial, sans-serif`;
+    lines = [''];
+    for (const word of paragraph) {
+      const last = lines.length - 1;
+      const next = lines[last] ? lines[last] + ' ' + word : word;
+      if (lines[last] && ctx.measureText(next).width > descWidth) lines.push(word);
+      else lines[last] = next;
+    }
+    if (lines.length * fontSize * 1.08 <= availableHeight) break;
+  }
+  lines.forEach((line, i) => ctx.fillText(line, split + gutter, (i + 0.5) * fontSize * 1.08));
   return createPanelLettering(canvas, left, 1.44, width, height, 6.115, renderer);
 }
 
@@ -296,6 +320,47 @@ function createPanelLettering(canvas, startX, descTop, descW, descH, radius, ren
     geo.dispose();
   };
   return mesh;
+}
+
+// Composite the small print at display resolution while the phone's 3D canvas
+// continues using its lower rendering budget. Follow the curved panel in strips.
+function createPanelTextLayer(mesh, source = mesh.material.map.image) {
+  const vertices = mesh.geometry.attributes.position;
+  const segments = mesh.geometry.parameters.widthSegments;
+  const layer = document.createElement('div');
+  layer.style.cssText = 'position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden';
+  layer.setAttribute('aria-hidden', 'true');
+  const stripSegments = Math.min(6, segments);
+  const strips = [];
+  for (let start = 0; start < segments; start += stripSegments) {
+    const strip = segments === 1 ? source : document.createElement('canvas');
+    const left = Math.round(source.width * start / segments);
+    if (strip !== source) {
+      strip.width = Math.round(source.width * (start + stripSegments) / segments) - left;
+      strip.height = source.height;
+      strip.getContext('2d').drawImage(source, left, 0, strip.width, strip.height, 0, 0, strip.width, strip.height);
+    }
+    strip.style.cssText = 'position:absolute;left:0;top:0;transform-origin:0 0';
+    layer.appendChild(strip);
+    strips.push(strip);
+  }
+  const points = Array.from({ length: 3 }, () => new THREE.Vector3());
+  return {
+    layer,
+    update(camera, width, height) {
+      strips.forEach((strip, i) => {
+        const start = i * stripSegments;
+        const indices = [start, start + stripSegments, segments + 1 + start];
+        points.forEach((pt, j) => {
+          pt.fromBufferAttribute(vertices, indices[j]).applyMatrix4(mesh.matrixWorld).project(camera);
+          pt.x = (1 + pt.x) * width / 2;
+          pt.y = (1 - pt.y) * height / 2;
+        });
+        const [a, b, c] = points;
+        strip.style.transform = `matrix(${(b.x-a.x)/strip.width},${(b.y-a.y)/strip.width},${(c.x-a.x)/strip.height},${(c.y-a.y)/strip.height},${a.x},${a.y})`;
+      });
+    },
+  };
 }
 
 // Multi-model cache to independently store and reuse loaded GLTF instances
@@ -656,6 +721,7 @@ export function Ring3DModel({
   textContent = null,
   buttonText = 'VIEW PROJECT ↗',
   onButtonClick = null,
+  onFrogSettledChange,
   projectUrl = '#',
 }) {
   const containerRef = useRef(null);
@@ -663,6 +729,8 @@ export function Ring3DModel({
   const textOverlayRef = useRef(null);
   const onButtonClickRef = useRef(onButtonClick);
   onButtonClickRef.current = onButtonClick;
+  const settledCallback = useRef(onFrogSettledChange);
+  settledCallback.current = onFrogSettledChange;
   const restoreExpandedNodesRef = useRef(() => { });
   const setCanvasNode = useCallback((node) => {
     canvasRef.current = node;
@@ -686,6 +754,8 @@ export function Ring3DModel({
     let ringPivot = null;
     let ringModelInstance = null;
     let mobileCopy = null;
+    let mobileTextLayer = null;
+    let mobileButtonLayer = null;
     const desktopCopy = [];
     const panelDividers = [];
     let sharedFrog = null;
@@ -694,6 +764,12 @@ export function Ring3DModel({
     let sharedFrogScreenTarget = null;
     let approachOffsetNdcY = 0;
     let sharedFrogLockWeight = 1;
+    let frogSettled = false;
+    const reportSettled = (settled) => {
+      if (settled === frogSettled) return;
+      frogSettled = settled;
+      settledCallback.current?.(settled);
+    };
     let expandedForSharedFrog = false;
     let expandedCanvasLayer = null;
     let expandedNodeHomes = [];
@@ -894,6 +970,7 @@ export function Ring3DModel({
           if (mobileCopy) ringModelInstance.add(mobileCopy);
         }
         if (mobileCopy) {
+          if (!mobile) mobileTextLayer?.layer.remove();
           mobileCopy.visible = mobile;
           desktopCopy.forEach(mesh => { mesh.visible = !mobile; });
         }
@@ -1258,6 +1335,7 @@ export function Ring3DModel({
       return true;
     };
     container.unmountSharedFrog = (frogRoot) => {
+      reportSettled(false);
       if (sharedFrog && (!frogRoot || frogRoot === sharedFrog)) {
         if (sharedFrog.parent === sharedFrogMount) {
           sharedFrogMount.remove(sharedFrog);
@@ -1287,6 +1365,7 @@ export function Ring3DModel({
           });
         }
         expandedForSharedFrog = false;
+        if (mobileCopy) mobileCopy.visible = window.innerWidth <= 900;
         lastProjectedCx = NaN;
         lastProjectedCy = NaN;
         lastProjectedW = NaN;
@@ -1741,7 +1820,14 @@ export function Ring3DModel({
             buttonCanvas.height = 384;
             const buttonCtx = buttonCanvas.getContext('2d');
             const labelText = buttonText || (isIntro ? 'EXPLORE WORK ↗' : 'VIEW PROJECT ↗');
-            drawButtonTexture(buttonCtx, 1024, 384, labelText, false, false);
+            let mobileButtonCanvas;
+            const paintButton = (hovered, pressed) => {
+              drawButtonTexture(buttonCtx, 1024, 384, labelText, hovered, pressed);
+              if (mobileButtonCanvas) {
+                drawButtonTexture(mobileButtonCanvas.getContext('2d'), 1024, 384, labelText, hovered, pressed, true);
+              }
+            };
+            paintButton(false, false);
 
             const buttonTexture = new THREE.CanvasTexture(buttonCanvas);
             buttonTexture.colorSpace = THREE.SRGBColorSpace;
@@ -1766,13 +1852,20 @@ export function Ring3DModel({
             buttonScreenMesh = new THREE.Mesh(screenGeo, screenMat);
             buttonScreenMesh.name = 'RingButtonScreenMesh';
             buttonBezelMesh.add(buttonScreenMesh);
+            if (!isIntro) {
+              buttonScreenMesh.userData.createMobileLayer = () => {
+                mobileButtonCanvas = buttonCanvas.cloneNode();
+                drawButtonTexture(mobileButtonCanvas.getContext('2d'), 1024, 384, labelText, isButtonHovered, isButtonPressed, true);
+                return createPanelTextLayer(buttonScreenMesh, mobileButtonCanvas);
+              };
+            }
 
             const restPos = buttonBezelMesh.position.clone();
             const pressVec = new THREE.Vector3(0, 0, 0.048).applyQuaternion(buttonBezelMesh.quaternion);
 
             const pressButton = () => {
               playMechanicalClickSound();
-              drawButtonTexture(buttonCtx, 1024, 384, labelText, true, true);
+              paintButton(true, true);
               buttonTexture.needsUpdate = true;
 
               if (pressTween) pressTween.kill();
@@ -1793,7 +1886,7 @@ export function Ring3DModel({
                       buttonBezelMesh.position.copy(restPos).addScaledVector(pressVec, anim.t);
                     },
                     onComplete: () => {
-                      drawButtonTexture(buttonCtx, 1024, 384, labelText, isButtonHovered, false);
+                      paintButton(isButtonHovered, false);
                       buttonTexture.needsUpdate = true;
                     }
                   });
@@ -1823,7 +1916,7 @@ export function Ring3DModel({
               if (hit !== isButtonHovered) {
                 isButtonHovered = hit;
                 canvas.style.cursor = hit ? 'pointer' : 'default';
-                drawButtonTexture(buttonCtx, 1024, 384, labelText, isButtonHovered, isButtonPressed);
+                paintButton(isButtonHovered, isButtonPressed);
                 buttonTexture.needsUpdate = true;
               }
             };
@@ -1855,7 +1948,7 @@ export function Ring3DModel({
                 isButtonHovered = false;
                 isButtonPressed = false;
                 canvas.style.cursor = 'default';
-                drawButtonTexture(buttonCtx, 1024, 384, labelText, false, false);
+                paintButton(false, false);
                 buttonTexture.needsUpdate = true;
               }
             };
@@ -1922,7 +2015,7 @@ export function Ring3DModel({
 
         if (sharedFrog) {
           if (typeof sharedFrog.tickFrogAnimation === 'function') {
-            sharedFrog.tickFrogAnimation(dt, now);
+            sharedFrog.tickFrogAnimation(dt, now, sharedFrogLockWeight);
           }
           if (expandedForSharedFrog) {
             alignSharedFrogToOpening(sharedFrog, 1);
@@ -1948,7 +2041,29 @@ export function Ring3DModel({
         }
 
         if (renderer && scene && camera) {
+          if (!isIntro && buttonScreenMesh && window.innerWidth <= 900 && expandedForSharedFrog && expandedCanvasLayer) {
+            mobileButtonLayer ??= buttonScreenMesh.userData.createMobileLayer();
+            if (mobileButtonLayer.layer.parentNode !== expandedCanvasLayer) expandedCanvasLayer.appendChild(mobileButtonLayer.layer);
+            buttonScreenMesh.updateWorldMatrix(true, false);
+            mobileButtonLayer.update(camera, window.innerWidth, window.innerHeight);
+          } else if (mobileButtonLayer?.layer.parentNode) {
+            mobileButtonLayer.layer.remove();
+          }
+          if (mobileCopy && window.innerWidth <= 900) {
+            const useLayer = expandedForSharedFrog && expandedCanvasLayer;
+            if (useLayer) {
+              mobileTextLayer ??= createPanelTextLayer(mobileCopy);
+              if (mobileTextLayer.layer.parentNode !== expandedCanvasLayer) expandedCanvasLayer.appendChild(mobileTextLayer.layer);
+              mobileCopy.updateWorldMatrix(true, false);
+              mobileTextLayer.update(camera, window.innerWidth, window.innerHeight);
+            } else {
+              mobileTextLayer?.layer.remove();
+            }
+            mobileCopy.visible = !useLayer;
+          }
           renderer.render(scene, camera);
+          reportSettled(Boolean(!isIntro && ringModelInstance && expandedForSharedFrog &&
+            sharedFrog && sharedFrog.parent === sharedFrogMount && sharedFrogLockWeight === 1));
           const ringName = (glbUrl || '').split('/').pop() || 'Ring';
           perfDiagnostics.recordRender(`ring-${ringName}`, renderer, `Ring (${ringName})`);
           perfDiagnostics.recordFrame(0, 'Ring Section: ' + ringName);
@@ -2001,6 +2116,7 @@ export function Ring3DModel({
     intersectionObserver.observe(container);
 
     return () => {
+      reportSettled(false);
       isMounted = false;
       const ringId = 'ring-' + (glbUrl || '').split('/').pop();
       perfDiagnostics.unregisterRenderer(ringId);
